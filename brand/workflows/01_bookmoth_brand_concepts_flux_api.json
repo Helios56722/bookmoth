@@ -1,0 +1,63 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {"ckpt_name": "flux1-dev-fp8.safetensors"},
+    "_meta": {"title": "LOAD — Flux 1 Dev FP8"}
+  },
+  "2": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["1", 1],
+      "text": "words, letters, typography, watermark, signature, mockup, photograph, realistic insect, horror, clutter, busy background, tiny details, thin fragile lines, gradients, extra wings, asymmetrical anatomy, copied character, copyrighted mascot, existing logo, low contrast, blur"
+    },
+    "_meta": {"title": "GLOBAL NEGATIVE — clear original marks"}
+  },
+  "11": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["1", 1],
+      "text": "Original app icon symbol for Bookmoth, a perfectly centered symmetrical moth whose lower wings form the unmistakable silhouette of an open book, bold rounded vector geometry, generous negative space, deep ink violet and warm amber on a clean warm cream background, flat two color graphic, premium learning technology brand, simple memorable silhouette, crisp edges, no words, no letters, no mockup"
+    },
+    "_meta": {"title": "CONCEPT 1 — Open-book moth"}
+  },
+  "12": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "_meta": {"title": "CANVAS 1"}},
+  "13": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["11", 0], "negative": ["2", 0], "latent_image": ["12", 0], "seed": 771041, "steps": 24, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}, "_meta": {"title": "GENERATE 1"}},
+  "14": {"class_type": "VAEDecode", "inputs": {"samples": ["13", 0], "vae": ["1", 2]}, "_meta": {"title": "DECODE 1"}},
+  "15": {"class_type": "SaveImage", "inputs": {"images": ["14", 0], "filename_prefix": "bookmoth/brand/concepts/01_open_book_moth"}, "_meta": {"title": "SAVE 1"}},
+  "21": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["1", 1],
+      "text": "Original friendly but capable moth librarian mascot for Bookmoth, full body, poised and curious, compact satchel holding index cards and one open reference book, wings shaped like layered book pages, subtle antennae like reading lamps, mature editorial character design rather than a baby mascot, ink violet body with amber highlights, clean flat illustration, warm cream background, strong silhouette, limited shapes, no words, no letters, no mockup"
+    },
+    "_meta": {"title": "CONCEPT 2 — Lantern scholar"}
+  },
+  "22": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "_meta": {"title": "CANVAS 2"}},
+  "23": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["21", 0], "negative": ["2", 0], "latent_image": ["22", 0], "seed": 771042, "steps": 24, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}, "_meta": {"title": "GENERATE 2"}},
+  "24": {"class_type": "VAEDecode", "inputs": {"samples": ["23", 0], "vae": ["1", 2]}, "_meta": {"title": "DECODE 2"}},
+  "25": {"class_type": "SaveImage", "inputs": {"images": ["24", 0], "filename_prefix": "bookmoth/brand/concepts/02_lantern_scholar"}, "_meta": {"title": "SAVE 2"}},
+  "31": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["1", 1],
+      "text": "Original Bookmoth brand figure, moth with open-book wings rendered as a bold field-guide linocut and modern risograph print, confident symmetrical pose, tactile ink texture contained inside a clean silhouette, two spot colors only, deep violet and amber on natural paper, intelligent independent learning mood, premium editorial identity, isolated centered mark, no words, no letters, no border, no mockup"
+    },
+    "_meta": {"title": "CONCEPT 3 — Field-guide print"}
+  },
+  "32": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "_meta": {"title": "CANVAS 3"}},
+  "33": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["31", 0], "negative": ["2", 0], "latent_image": ["32", 0], "seed": 771043, "steps": 24, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}, "_meta": {"title": "GENERATE 3"}},
+  "34": {"class_type": "VAEDecode", "inputs": {"samples": ["33", 0], "vae": ["1", 2]}, "_meta": {"title": "DECODE 3"}},
+  "35": {"class_type": "SaveImage", "inputs": {"images": ["34", 0], "filename_prefix": "bookmoth/brand/concepts/03_field_guide_print"}, "_meta": {"title": "SAVE 3"}},
+  "41": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["1", 1],
+      "text": "Original modern symbol for Bookmoth, a minimal moth and open book combined in one continuous emblem, a small amber learning light floating between the antennae with one thin orbital arc, chunky rounded geometry, deep ink violet, amber and warm cream, exceptionally clear at app icon size, calm science museum identity, flat vector design, centered, generous empty space, no words, no letters, no mockup"
+    },
+    "_meta": {"title": "CONCEPT 4 — Orbit mark"}
+  },
+  "42": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "_meta": {"title": "CANVAS 4"}},
+  "43": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["41", 0], "negative": ["2", 0], "latent_image": ["42", 0], "seed": 771044, "steps": 24, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}, "_meta": {"title": "GENERATE 4"}},
+  "44": {"class_type": "VAEDecode", "inputs": {"samples": ["43", 0], "vae": ["1", 2]}, "_meta": {"title": "DECODE 4"}},
+  "45": {"class_type": "SaveImage", "inputs": {"images": ["44", 0], "filename_prefix": "bookmoth/brand/concepts/04_orbit_mark"}, "_meta": {"title": "SAVE 4"}}
+}

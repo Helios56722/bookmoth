@@ -1,0 +1,12 @@
+{
+  "name": "Bookmoth Learning Studio",
+  "short_name": "Bookmoth",
+  "description": "Turn permitted screenshots into source-grounded learning material.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#17101f",
+  "theme_color": "#201433",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

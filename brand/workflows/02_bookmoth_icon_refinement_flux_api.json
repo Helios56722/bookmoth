@@ -1,0 +1,17 @@
+{
+  "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "flux1-dev-fp8.safetensors"}, "_meta": {"title": "LOAD — Flux 1 Dev FP8"}},
+  "2": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": "words, letters, typography, watermark, signature, mockup, photograph, realistic insect, face, eyes, smile, cartoon mascot, separate floating book, clutter, busy background, thin fragile details, gradients, shadow, 3d render, extra wings, copied character, existing logo, blur"}, "_meta": {"title": "NEGATIVE — symbol only"}},
+  "3": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": "A single original flat vector emblem for a learning app, a geometric moth built from an open book: the two upper wings are broad deep violet shapes, the two lower wings are warm amber book pages joined at one central spine, the negative space between the lower wings clearly forms an open book, one small amber light between simple antennae, compact symmetrical silhouette, thick rounded shapes, no outlines, two colors on warm cream, extremely clear at 32 pixels, centered with generous empty space, no text, no letters, no separate book, no mockup"}, "_meta": {"title": "BOOKMOTH REFINEMENT PROMPT"}},
+  "11": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "_meta": {"title": "CANVAS A"}},
+  "12": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["3", 0], "negative": ["2", 0], "latent_image": ["11", 0], "seed": 881041, "steps": 28, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}, "_meta": {"title": "GENERATE A"}},
+  "13": {"class_type": "VAEDecode", "inputs": {"samples": ["12", 0], "vae": ["1", 2]}, "_meta": {"title": "DECODE A"}},
+  "14": {"class_type": "SaveImage", "inputs": {"images": ["13", 0], "filename_prefix": "bookmoth/brand/refined/01_geometric_book_wings"}, "_meta": {"title": "SAVE A"}},
+  "21": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "_meta": {"title": "CANVAS B"}},
+  "22": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["3", 0], "negative": ["2", 0], "latent_image": ["21", 0], "seed": 881042, "steps": 28, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}, "_meta": {"title": "GENERATE B"}},
+  "23": {"class_type": "VAEDecode", "inputs": {"samples": ["22", 0], "vae": ["1", 2]}, "_meta": {"title": "DECODE B"}},
+  "24": {"class_type": "SaveImage", "inputs": {"images": ["23", 0], "filename_prefix": "bookmoth/brand/refined/02_geometric_book_wings"}, "_meta": {"title": "SAVE B"}},
+  "31": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "_meta": {"title": "CANVAS C"}},
+  "32": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["3", 0], "negative": ["2", 0], "latent_image": ["31", 0], "seed": 881043, "steps": 28, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}, "_meta": {"title": "GENERATE C"}},
+  "33": {"class_type": "VAEDecode", "inputs": {"samples": ["32", 0], "vae": ["1", 2]}, "_meta": {"title": "DECODE C"}},
+  "34": {"class_type": "SaveImage", "inputs": {"images": ["33", 0], "filename_prefix": "bookmoth/brand/refined/03_geometric_book_wings"}, "_meta": {"title": "SAVE C"}}
+}

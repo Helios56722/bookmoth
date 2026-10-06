@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bookmoth">
-  <rect width="512" height="512" rx="112" fill="#201433"/>
-  <path d="M239 228C172 100 64 114 70 240c4 87 91 124 169 57" fill="#8062c9" stroke="#f1c17d" stroke-width="15"/>
-  <path d="M273 228c67-128 175-114 169 12-4 87-91 124-169 57" fill="#9d7de8" stroke="#f1c17d" stroke-width="15"/>
-  <path d="M247 155c-22 41-18 129 9 173 27-44 31-132 9-173z" fill="#f1c17d"/>
-  <path d="M116 324c54-10 104 4 140 39 36-35 86-49 140-39v89c-55-9-105 3-140 38-35-35-85-47-140-38z" fill="#f6efe4" stroke="#f1c17d" stroke-width="13"/>
-  <path d="M256 363v88" stroke="#6e567c" stroke-width="9"/>
-</svg>

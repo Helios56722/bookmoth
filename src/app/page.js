@@ -22,10 +22,14 @@ const outputTabs = [
 function MothMark({ compact = false }) {
   return (
     <span className={compact ? "moth-mark compact" : "moth-mark"} aria-hidden="true">
-      <span className="wing wing-left" />
-      <span className="moth-body" />
-      <span className="wing wing-right" />
-      <span className="book-wing" />
+      <NextImage
+        className="moth-mark-image"
+        src="/bookmoth-moth-mark.png"
+        alt=""
+        width={1025}
+        height={685}
+        sizes={compact ? "54px" : "280px"}
+      />
     </span>
   );
 }
@@ -266,7 +270,7 @@ export default function Home() {
         </div>
         <div className="hero-figure" aria-label="Bookmoth brand figure concept">
           <span className="orbit orbit-one" /><span className="orbit orbit-two" />
-          <NextImage className="brand-figure-image" src="/bookmoth-brand-figure.png" alt="A violet and amber moth hovering above an open book" width={1024} height={1024} priority />
+          <NextImage className="brand-figure-image" src="/bookmoth-brand-figure.png" alt="A dark-plum and orange moth hovering above an open book" width={1024} height={1024} priority />
           <div className="figure-note"><b>Meet the Bookmoth</b><span>Generated locally in ComfyUI, then selected for its clear silhouette.</span></div>
         </div>
       </section>

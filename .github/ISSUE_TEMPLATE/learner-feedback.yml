@@ -1,0 +1,66 @@
+name: Learner feedback
+description: Share a permitted, privacy-safe Bookmoth learning session.
+title: "[Learner feedback] "
+labels: ["learner-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Bookmoth. Do not include names, grades, student IDs, private course records, copyrighted screenshots, or active assessment questions. Describe the workflow and results in your own words.
+  - type: dropdown
+    id: context
+    attributes:
+      label: Learning context
+      options:
+        - School or college
+        - Professional training
+        - Hobby or personal skill
+        - Other permitted learning
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options: [Phone, Tablet, Laptop, Desktop]
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: What were you trying to learn?
+      description: Give the topic and source type without including private or copyrighted source content.
+    validations:
+      required: true
+  - type: textarea
+    id: clear
+    attributes:
+      label: What felt clear?
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Where did you hesitate or need help?
+    validations:
+      required: true
+  - type: dropdown
+    id: sources
+    attributes:
+      label: Could you trace an explanation back to its source ID?
+      options: [Yes, Yes with help, No]
+    validations:
+      required: true
+  - type: dropdown
+    id: reuse
+    attributes:
+      label: Would you use Bookmoth again for a permitted learning task?
+      options: [Yes, Maybe, No]
+    validations:
+      required: true
+  - type: textarea
+    id: missing
+    attributes:
+      label: What is missing from your real study workflow?
+    validations:
+      required: true

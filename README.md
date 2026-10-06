@@ -71,6 +71,14 @@ npm run build
 
 The repository's automated workflow runs the same test, lint, and production-build checks on pushes and pull requests.
 
+## Learner validation
+
+The first validation round uses five short, anonymous usability sessions. Open `Open Learner Validation.cmd` on Windows for the local session recorder, or follow [`docs/validation/learner-test-guide.md`](docs/validation/learner-test-guide.md). The tracker stores records in the active browser and exports CSV or JSON; it does not send participant data anywhere.
+
+Public testers can use the repository's **Learner feedback** issue form. Do not attach source screenshots, names, grades, student IDs, private course records, copyrighted materials, or active assessment questions.
+
+Five sessions are directional usability evidence. They do not prove demand, learning improvement, or willingness to pay.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Keep accessibility, clear typography, source traceability, honest uncertainty, and academic integrity intact.

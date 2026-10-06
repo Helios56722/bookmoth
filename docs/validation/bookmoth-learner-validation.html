@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bookmoth learner validation</title>
+  <style>
+    :root { color-scheme:dark; --ink:#f5f0e7; --muted:#b9b0c6; --panel:#171321; --panel2:#211a2d; --line:#3b304b; --amber:#f0b85a; --violet:#a98ad8; --danger:#ff9d91; --ok:#85d7b1; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#0d0a12; color:var(--ink); font-family:"Segoe UI",Arial,sans-serif; font-size:16px; line-height:1.58; letter-spacing:.01em; }
+    button,input,select,textarea { font:inherit; }
+    header,main { width:min(1180px,calc(100% - 32px)); margin:auto; }
+    header { padding:48px 0 26px; border-bottom:1px solid var(--line); }
+    .eyebrow { color:var(--amber); font-size:.82rem; font-weight:750; letter-spacing:.16em; text-transform:uppercase; }
+    h1 { max-width:760px; margin:.35rem 0 .65rem; font-size:clamp(2.2rem,6vw,5rem); line-height:1.02; letter-spacing:-.035em; }
+    header p { max-width:720px; color:var(--muted); }
+    main { padding:28px 0 70px; display:grid; gap:22px; }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .metric,.card { background:var(--panel); border:1px solid var(--line); border-radius:18px; }
+    .metric { padding:18px; }
+    .metric b { display:block; font-size:1.7rem; color:var(--amber); }
+    .metric span { color:var(--muted); }
+    .card { padding:clamp(20px,3vw,32px); }
+    .card h2 { margin:0 0 6px; font-size:1.35rem; }
+    .card > p { margin-top:0; color:var(--muted); max-width:72ch; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    label { display:grid; gap:7px; color:var(--muted); font-weight:650; }
+    input,select,textarea { width:100%; color:var(--ink); background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:11px 12px; line-height:1.45; }
+    textarea { min-height:98px; resize:vertical; }
+    input:focus,select:focus,textarea:focus,button:focus-visible { outline:3px solid rgba(240,184,90,.45); outline-offset:2px; }
+    fieldset { margin:18px 0 0; padding:0; border:0; }
+    legend { margin-bottom:10px; font-weight:800; }
+    .tasks { display:grid; gap:10px; }
+    .task { display:grid; grid-template-columns:minmax(0,1fr) 170px; gap:12px; align-items:center; padding:14px; background:var(--panel2); border:1px solid var(--line); border-radius:12px; }
+    .task b { display:block; color:var(--ink); }
+    .task span { color:var(--muted); font-size:.93rem; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+    button { border:1px solid var(--line); border-radius:999px; padding:10px 17px; color:var(--ink); background:var(--panel2); cursor:pointer; font-weight:750; }
+    button.primary { background:var(--amber); color:#221506; border-color:transparent; }
+    button.danger-button { color:var(--danger); border-color:rgba(255,157,145,.55); }
+    button:hover { border-color:var(--violet); }
+    .status { min-height:1.6em; margin-top:12px; color:var(--ok); }
+    .notice { padding:14px 16px; border-left:4px solid var(--violet); background:rgba(169,138,216,.09); color:var(--muted); }
+    .danger { color:var(--danger); }
+    @media (max-width:760px) { .summary,.grid { grid-template-columns:1fr; } .task { grid-template-columns:1fr; } header { padding-top:30px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Bookmoth field study · round one</div>
+    <h1>Watch how learners follow the light.</h1>
+    <p>Run five short sessions. Record what the learner actually completes, where they need help, and whether source grounding changes how they judge the output.</p>
+  </header>
+  <main>
+    <section class="summary" aria-label="Validation totals">
+      <div class="metric"><b id="sessions">0/5</b><span>sessions recorded</span></div>
+      <div class="metric"><b id="coreRate">—</b><span>completed core flow</span></div>
+      <div class="metric"><b id="sourceRate">—</b><span>understood source IDs</span></div>
+      <div class="metric"><b id="reuseRate">—</b><span>would reuse</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Session record</h2>
+      <p>Use an anonymous ID. Keep names, grades, private course records, active assessments, and sensitive screenshots out of this file.</p>
+      <div class="grid">
+        <label>Anonymous session ID<input id="sessionId" maxlength="12" placeholder="L01"></label>
+        <label>Learner context<select id="context"><option value="">Choose one</option><option>School or college</option><option>Professional training</option><option>Hobby or personal skill</option><option>Other permitted learning</option></select></label>
+        <label>Device<select id="device"><option value="">Choose one</option><option>Phone</option><option>Tablet</option><option>Laptop</option><option>Desktop</option></select></label>
+        <label>Material type<select id="material"><option value="">Choose one</option><option>Built-in sample</option><option>Personal notes</option><option>Permitted course material</option><option>Tutorial or hobby reference</option></select></label>
+        <label>Minutes<input id="minutes" type="number" min="1" max="60" inputmode="numeric" placeholder="10"></label>
+        <label>Most valuable output<select id="valuable"><option value="">Choose one</option><option>Guide</option><option>Lantern trail</option><option>Report</option><option>Practice</option><option>Collage</option><option>Source review</option><option>None yet</option></select></label>
+      </div>
+
+      <fieldset><legend>Observed tasks</legend><div class="tasks" id="tasks"></div></fieldset>
+
+      <div class="grid" style="margin-top:18px">
+        <label>Needed help?<select id="help"><option value="">Choose one</option><option>No help</option><option>One small prompt</option><option>Repeated help</option><option>Could not finish</option></select></label>
+        <label>Would use again?<select id="reuse"><option value="">Choose one</option><option>Yes</option><option>Maybe</option><option>No</option></select></label>
+        <label>Critical issue<textarea id="critical" placeholder="Privacy concern, misleading confidence, broken flow, or leave blank"></textarea></label>
+        <label>Observed notes<textarea id="notes" placeholder="What happened, using factual and anonymous language"></textarea></label>
+      </div>
+      <div class="actions"><button class="primary" id="save">Save session</button><button id="reset">Clear form</button><button id="exportCsv">Export CSV</button><button id="exportJson">Export JSON</button><button class="danger-button" id="purge">Reset saved sessions</button></div>
+      <div class="status" id="status" role="status"></div>
+    </section>
+
+    <section class="card">
+      <h2>How to run the session</h2>
+      <p class="notice">Give the learner the five tasks without explaining the interface first. Help only when they are blocked, and record that help. Ask opinion questions after the tasks so comments do not replace observed behavior.</p>
+      <ol><li>Open Bookmoth and load the built-in sample or permitted material.</li><li>Start a timer and give the tasks in order.</li><li>Record each task as completed, completed with help, or blocked.</li><li>Ask what felt clear, where they hesitated, and which output they would reuse.</li><li>Export the record and store it inside the private Hive validation folder.</li></ol>
+      <p class="danger"><b>Evidence rule:</b> five sessions are directional usability evidence. They do not prove learning gains, demand, or willingness to pay.</p>
+    </section>
+  </main>
+  <script>
+    const taskDefs = [
+      ["sample","Completed the sample flow","Loaded the sample and reached a learning pack."],
+      ["sources","Understood source IDs","Explained what S1/S2 and source pills represent."],
+      ["uncertainty","Found uncertainty","Located unclear text, a caution, or a blind spot."],
+      ["trace","Traced a practice answer","Connected one answer back to its source."],
+      ["trail","Used the Lantern trail","Explained a glow point, thread, or blind spot."],
+      ["export","Exported Markdown","Downloaded the pack and described a use for it."]
+    ];
+    const values=["Not tested","Completed","With help","Blocked"];
+    const $=id=>document.getElementById(id);
+    const storeKey="bookmoth-validation-v1";
+    const getRecords=()=>{try{return JSON.parse(localStorage.getItem(storeKey)||"[]");}catch{return[];}};
+    const saveRecords=items=>localStorage.setItem(storeKey,JSON.stringify(items));
+    taskDefs.forEach(([id,title,detail])=>{const row=document.createElement("label");row.className="task";row.innerHTML=`<span><b>${title}</b>${detail}</span><select id="task-${id}">${values.map(value=>`<option>${value}</option>`).join("")}</select>`;$("tasks").appendChild(row);});
+    function refresh(){const records=getRecords();$("sessions").textContent=`${records.length}/5`;const rate=(key,yes)=>records.length?`${Math.round(records.filter(record=>yes.includes(record[key])).length/records.length*100)}%`:"—";$("coreRate").textContent=rate("sample",["Completed","With help"]);$("sourceRate").textContent=rate("sources",["Completed","With help"]);$("reuseRate").textContent=rate("reuse",["Yes"]);}
+    function clearForm(){["sessionId","minutes","critical","notes"].forEach(id=>$(id).value="");["context","device","material","valuable","help","reuse"].forEach(id=>$(id).selectedIndex=0);taskDefs.forEach(([id])=>$("task-"+id).selectedIndex=0);$("status").textContent="";}
+    $("save").addEventListener("click",()=>{const id=$("sessionId").value.trim().toUpperCase();if(!/^L[0-9]{2,3}$/.test(id)){ $("status").textContent="Use an anonymous ID such as L01.";return;}const record={sessionId:id,date:new Date().toISOString().slice(0,10),context:$("context").value,device:$("device").value,material:$("material").value,minutes:$("minutes").value,valuable:$("valuable").value,help:$("help").value,reuse:$("reuse").value,critical:$("critical").value.trim(),notes:$("notes").value.trim()};taskDefs.forEach(([key])=>record[key]=$("task-"+key).value);const records=getRecords();const index=records.findIndex(item=>item.sessionId===id);if(index>=0)records[index]=record;else records.push(record);saveRecords(records);refresh();$("status").textContent=`Saved ${id} in this browser.`;});
+    $("reset").addEventListener("click",clearForm);
+    let purgeArmed=false;
+    $("purge").addEventListener("click",()=>{if(!purgeArmed){purgeArmed=true;$("purge").textContent="Click again to erase";$("status").textContent="Press the reset button again within five seconds to erase saved sessions.";setTimeout(()=>{purgeArmed=false;$("purge").textContent="Reset saved sessions";},5000);return;}localStorage.removeItem(storeKey);purgeArmed=false;$("purge").textContent="Reset saved sessions";clearForm();refresh();$("status").textContent="Saved sessions erased from this browser.";});
+    function download(name,content,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
+    $("exportJson").addEventListener("click",()=>download("bookmoth-learner-sessions.json",JSON.stringify(getRecords(),null,2),"application/json"));
+    $("exportCsv").addEventListener("click",()=>{const rows=getRecords();const keys=["sessionId","date","context","device","material","sample","sources","uncertainty","trace","trail","export","minutes","help","reuse","valuable","critical","notes"];const quote=value=>`"${String(value??"").replaceAll('"','""')}"`;download("bookmoth-learner-sessions.csv",[keys.join(","),...rows.map(row=>keys.map(key=>quote(row[key])).join(","))].join("\n"),"text/csv");});
+    refresh();
+  </script>
+</body>
+</html>

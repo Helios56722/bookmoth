@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildEvidenceLockedPack,
   learningPackToMarkdown,
   normalizeLearningPack,
   sampleLearningPack,
@@ -44,4 +45,41 @@ test("markdown export includes verification language and citations", () => {
   assert.match(markdown, /Verify the result against the cited source images/);
   assert.match(markdown, /## Lantern trail/);
   assert.match(markdown, /### Blind spots/);
+});
+
+test("local evidence lock keeps factual answers in extracted source wording", () => {
+  const sourceText = [
+    "Photosynthesis Study Notes",
+    "Photosynthesis converts light energy into chemical energy.",
+    "Products: glucose and oxygen.",
+  ].join("\n");
+  const pack = buildEvidenceLockedPack([{
+    sourceId: "S1",
+    extractedText: sourceText,
+    confidence: "high",
+    unclearText: [],
+  }]);
+
+  assert.equal(pack.concepts.length, 2);
+  assert.equal(pack.reportSections.length, 2);
+  assert.equal(pack.flashcards.length, 2);
+  assert.equal(pack.practice.length, 2);
+  for (const item of [...pack.concepts.map((entry) => entry.explanation), ...pack.flashcards.map((entry) => entry.back)]) {
+    assert.ok(sourceText.includes(item));
+  }
+  assert.equal(pack.trailMap.threads.length, 0);
+  assert.ok(pack.trailMap.blindSpots[0].reason.includes("does not prove a sequence"));
+});
+
+test("evidence lock does not discard a colon-led first fact as a heading", () => {
+  const pack = buildEvidenceLockedPack([{
+    sourceId: "S1",
+    extractedText: "Reactants: carbon dioxide and water\nProducts: glucose and oxygen",
+    confidence: "high",
+    unclearText: [],
+  }]);
+
+  assert.equal(pack.concepts.length, 2);
+  assert.equal(pack.concepts[0].term, "Reactants");
+  assert.equal(pack.concepts[0].explanation, "Reactants: carbon dioxide and water");
 });

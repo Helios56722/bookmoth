@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import NextImage from "next/image";
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -74,12 +74,24 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [providerStatus, setProviderStatus] = useState(null);
   const fileInput = useRef(null);
 
   const totalSize = useMemo(
     () => sources.reduce((sum, source) => sum + source.size, 0),
     [sources],
   );
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/create")
+      .then((response) => response.json())
+      .then((data) => { if (active) setProviderStatus(data); })
+      .catch(() => {
+        if (active) setProviderStatus({ ready: false, local: true, model: "Local AI", detail: "Bookmoth could not check the AI provider." });
+      });
+    return () => { active = false; };
+  }, []);
 
   async function addFiles(fileList) {
     setMessage("");
@@ -120,6 +132,15 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Bookmoth could not create a learning pack.");
       setPack(data.pack);
+      if (data.provider) {
+        setProviderStatus({
+          ready: true,
+          local: data.provider.local,
+          provider: data.provider.name,
+          model: data.provider.model,
+          detail: data.provider.local ? "Learning pack created on this PC." : "Learning pack created with the configured cloud provider.",
+        });
+      }
       setActiveTab("guide");
     } catch (error) {
       setMessage(error.message);
@@ -294,12 +315,22 @@ export default function Home() {
               <span>I have permission to use these materials. I am studying, not answering an active or proctored assessment.</span>
             </label>
 
-            <button className="button primary full" type="button" disabled={busy || sources[0]?.displayOnly} onClick={createPack}>
+            <div className={`provider-status ${providerStatus?.ready ? "ready" : providerStatus ? "blocked" : "checking"}`} role="status">
+              <span aria-hidden="true" />
+              <div>
+                <b>{providerStatus ? `${providerStatus.local ? "Local" : "Cloud"} AI · ${providerStatus.model}` : "Checking AI provider…"}</b>
+                <small>{providerStatus?.detail || "Confirming the model before images are submitted."}</small>
+              </div>
+            </div>
+
+            <button className="button primary full" type="button" disabled={busy || sources[0]?.displayOnly || providerStatus?.ready === false} onClick={createPack}>
               {busy ? "Reading your sources…" : "Create learning pack"}
             </button>
             {sources[0]?.displayOnly && <button className="button full" type="button" onClick={() => fileInput.current?.click()}>Replace sample with my images</button>}
             {message && <p className="status-message" role="status">{message}</p>}
-            <p className="privacy-note">Images stay in this browser until you create a pack. Then they are sent to the AI provider configured by the person hosting Bookmoth.</p>
+            <p className="privacy-note">{providerStatus?.local
+              ? "Local mode keeps image analysis on this PC through Ollama. Images are not uploaded to OpenAI."
+              : "Images stay in this browser until you create a pack. Then they are sent to the configured AI provider."}</p>
           </aside>
 
           <section className="output-panel" aria-live="polite">

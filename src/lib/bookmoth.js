@@ -101,6 +101,125 @@ export function normalizeLearningPack(value = {}) {
   };
 }
 
+function sourceLines(text = "") {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*(?:[-*•●▪◦]+|\d+[.)])\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function looksLikeHeading(line = "", lineCount = 0) {
+  return lineCount > 1
+    && line.length <= 90
+    && !line.includes(":")
+    && !/\b(?:is|are|was|were|uses?|produces?|converts?|captures?|contains?|includes?|requires?|means?|refers?\s+to)\b/i.test(line)
+    && !/[.!?;]$/.test(line);
+}
+
+function exactLabel(line = "", index = 0) {
+  const colonIndex = line.indexOf(":");
+  if (colonIndex > 0 && colonIndex <= 48) return line.slice(0, colonIndex).trim();
+
+  const subject = line.match(
+    /^(.{2,55}?)\s+(?:is|are|was|were|uses?|produces?|converts?|captures?|contains?|includes?|requires?|means?|refers?\s+to)\b/i,
+  )?.[1]?.trim();
+  if (subject) return subject;
+
+  const words = line.split(/\s+/).filter(Boolean);
+  if (words.length > 0 && words.length <= 5) return line.replace(/[.!?]+$/, "");
+  return `Source point ${index + 1}`;
+}
+
+export function buildEvidenceLockedPack(extractedSources = []) {
+  const sourceRecords = extractedSources.map((source, sourceIndex) => {
+    const lines = sourceLines(source.extractedText);
+    const claims = looksLikeHeading(lines[0], lines.length) ? lines.slice(1) : lines;
+    return {
+      sourceId: source.sourceId || `S${sourceIndex + 1}`,
+      titleLine: lines[0] || `Source ${sourceIndex + 1}`,
+      claims,
+    };
+  });
+  const points = sourceRecords
+    .flatMap((source) => source.claims.map((text) => ({ sourceId: source.sourceId, text })))
+    .filter((point) => point.text && point.text !== "No readable text found.")
+    .slice(0, 24)
+    .map((point, index) => ({ ...point, label: exactLabel(point.text, index) }));
+  const titleLine = sourceRecords[0]?.titleLine;
+  const title = titleLine && titleLine !== "No readable text found."
+    ? `${titleLine}: evidence-locked study guide`
+    : "Evidence-locked study guide";
+  const citedSourceIds = [...new Set(points.map((point) => point.sourceId))];
+  const limitedTrail = points.slice(0, 7);
+
+  return normalizeLearningPack({
+    title,
+    overview: points.length
+      ? `This guide organizes ${points.length} source statements from ${citedSourceIds.length} image${citedSourceIds.length === 1 ? "" : "s"}. Answers preserve the extracted wording so each statement can be checked against its source.`
+      : "Bookmoth could not find readable study statements in these images.",
+    sources: extractedSources,
+    concepts: points.map((point) => ({
+      term: point.label,
+      explanation: point.text,
+      sourceIds: [point.sourceId],
+    })),
+    trailMap: {
+      glowPoints: limitedTrail.map((point, index) => ({
+        id: `G${index + 1}`,
+        label: point.label,
+        whyItMatters: point.text,
+        sourceIds: [point.sourceId],
+      })),
+      threads: [],
+      blindSpots: points.length > 1 ? [{
+        question: "Which source statements are directly connected, and what is the relationship?",
+        reason: "The source text lists statements, but their order alone does not prove a sequence or relationship.",
+        sourceIds: citedSourceIds,
+      }] : [],
+      recallLoop: points.length ? [
+        "Cover the answers and recall each source statement in your own words.",
+        "Check every answer against its cited source, then correct anything you missed.",
+        "Repeat the hardest cards tomorrow before rereading the source.",
+      ] : [],
+    },
+    reportSections: points.map((point) => ({
+      heading: point.label,
+      body: point.text,
+      sourceIds: [point.sourceId],
+    })),
+    flashcards: points.map((point) => ({
+      front: `What does the source state about “${point.label}”?`,
+      back: point.text,
+      sourceIds: [point.sourceId],
+    })),
+    practice: points.slice(0, 12).map((point) => ({
+      question: `Without looking, write the statement associated with “${point.label}.”`,
+      hint: `Check ${point.sourceId} only after attempting an answer.`,
+      answer: point.text,
+      sourceIds: [point.sourceId],
+    })),
+    collage: {
+      title: titleLine && titleLine !== "No readable text found." ? titleLine : "Source review board",
+      caption: "A compact board made from the exact statements extracted from your images.",
+      callouts: points.slice(0, 12).map((point) => ({
+        text: point.text,
+        sourceIds: [point.sourceId],
+      })),
+    },
+    reviewPlan: points.length ? [
+      "Review the extracted text beside the original images and correct any OCR mistakes.",
+      "Complete the practice prompts without looking at the answers.",
+      "Return tomorrow and retry only the cards you missed.",
+    ] : ["Use a clearer or closer image and try again."],
+    cautions: [
+      "Local evidence lock keeps factual answers in the extracted source wording. OCR can still be wrong, so compare each cited source with the original image.",
+      ...(extractedSources.some((source) => source.confidence !== "high" || source.unclearText?.length)
+        ? ["One or more images contain uncertain text. Review the Source extraction panel before studying."]
+        : []),
+    ],
+  });
+}
+
 export function learningPackToMarkdown(pack) {
   const clean = normalizeLearningPack(pack);
   const lines = [

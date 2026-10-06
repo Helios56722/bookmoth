@@ -97,6 +97,9 @@ textarea { min-height: 76px; resize: vertical; }
 textarea::placeholder, input::placeholder { color: #81768a; }
 .integrity-check { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; margin-top: 18px; color: #cfc4d2; font-size: .76rem; line-height: 1.45; cursor: pointer; }.integrity-check input { width: 18px; height: 18px; accent-color: var(--amber); }
 .status-message { padding: 10px 12px; border-left: 2px solid var(--amber); background: rgba(240,183,111,.08); color: #f4dfc4; font-size: .78rem; line-height: 1.5; }
+.provider-status { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 10px; align-items: start; margin: 16px 0 12px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,255,255,.025); }
+.provider-status > span { width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: #8a7d90; box-shadow: 0 0 0 4px rgba(138,125,144,.1); }.provider-status.ready > span { background: #76dfa8; box-shadow: 0 0 0 4px rgba(118,223,168,.1); }.provider-status.blocked > span { background: var(--amber); box-shadow: 0 0 0 4px rgba(240,183,111,.1); }
+.provider-status div { min-width: 0; display: grid; gap: 3px; }.provider-status b { color: #f3ebf5; font-size: .76rem; line-height: 1.35; overflow-wrap: anywhere; }.provider-status small { color: var(--muted); font-size: .69rem; line-height: 1.45; }
 
 .waiting-state { min-height: 620px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .waiting-state .moth-mark { opacity: .74; }.waiting-state h3 { margin: 22px 0 8px; font-family: var(--serif); font-size: 2rem; font-weight: 500; }.waiting-state > p { max-width: 600px; margin: 0; color: var(--muted); }

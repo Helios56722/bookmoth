@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import sharp from "sharp";
+import { Buffer } from "node:buffer";
 import { buildEvidenceLockedPack, normalizeLearningPack, validateSources } from "@/lib/bookmoth";
 
 export const runtime = "nodejs";
@@ -163,15 +165,6 @@ const packSchema = {
   },
 };
 
-const sourceExtractionSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: ["sources"],
-  properties: {
-    sources: packSchema.properties.sources,
-  },
-};
-
 function extractOutputText(response) {
   if (response.output_text) return response.output_text;
   return response.output
@@ -293,42 +286,80 @@ async function callOllama(config, payload) {
   return result.message.content;
 }
 
+async function prepareOllamaImage(dataUrl) {
+  const encoded = dataUrl.split(",")[1];
+  if (!encoded) throw new ProviderError("One of the source images could not be prepared for local analysis.", 400);
+
+  const maxDimension = Number(process.env.BOOKMOTH_OCR_MAX_DIMENSION || 1800);
+  const quality = Number(process.env.BOOKMOTH_OCR_JPEG_QUALITY || 90);
+  return sharp(Buffer.from(encoded, "base64"))
+    .rotate()
+    .resize({ width: maxDimension, height: maxDimension, fit: "inside", withoutEnlargement: true })
+    .flatten({ background: "#ffffff" })
+    .jpeg({ quality, chromaSubsampling: "4:4:4" })
+    .toBuffer()
+    .then((buffer) => buffer.toString("base64"));
+}
+
 async function createWithOllama(config, body) {
   const common = {
     model: config.model,
     stream: false,
     options: {
       temperature: 0,
-      num_ctx: Number(process.env.OLLAMA_NUM_CTX || 32768),
-      num_predict: Number(process.env.OLLAMA_NUM_PREDICT || 6144),
+      num_ctx: Number(process.env.OLLAMA_NUM_CTX || 8192),
+      num_predict: Number(process.env.OLLAMA_NUM_PREDICT || 2048),
     },
     keep_alive: process.env.OLLAMA_KEEP_ALIVE || "5m",
   };
-  const extractionText = await callOllama(config, {
-    ...common,
-    messages: [{
-      role: "user",
-      content: "Transcribe only the text visibly present in each image. Keep one source per image in the supplied order. Do not explain, complete, correct, or add facts. Put unreadable fragments in unclearText. Return only JSON matching the schema.",
-      images: body.sources.map((source) => source.dataUrl.split(",")[1]),
-    }],
-    format: sourceExtractionSchema,
-  });
-  let extraction;
-  try {
-    extraction = JSON.parse(extractionText);
-  } catch (error) {
-    console.error("Ollama returned invalid source extraction JSON", error, extractionText);
-    throw new ProviderError("The local model could not read these images. Try fewer or clearer screenshots.", 502);
+  const preparedImages = await Promise.all(body.sources.map((source) => prepareOllamaImage(source.dataUrl)));
+  const extractedSources = [];
+
+  for (const [index, image] of preparedImages.entries()) {
+    const sourceId = `S${index + 1}`;
+    try {
+      const extractionText = await callOllama(config, {
+        ...common,
+        messages: [{
+          role: "user",
+          content: `Transcribe only text visibly present in this one image. Treat the entire image as one source even when it contains multiple windows or pages. Do not explain, complete, correct, or add facts. Return only valid JSON shaped like {"sources":[{"sourceId":"${sourceId}","extractedText":"all visible text","confidence":"high|medium|low","unclearText":["unreadable fragments"]}]}.`,
+          images: [image],
+        }],
+        format: "json",
+      });
+      const extraction = JSON.parse(extractionText);
+      if (!Array.isArray(extraction.sources) || extraction.sources.length === 0) {
+        throw new Error("The response did not include a source record.");
+      }
+      const records = extraction.sources;
+      const confidenceOrder = { high: 0, medium: 1, low: 2 };
+      const confidence = records
+        .map((source) => (["high", "medium", "low"].includes(source.confidence) ? source.confidence : "low"))
+        .sort((left, right) => confidenceOrder[right] - confidenceOrder[left])[0];
+      extractedSources.push({
+        sourceId,
+        extractedText: records.map((source) => source.extractedText).filter((text) => typeof text === "string" && text.trim()).join("\n\n") || "No readable text found.",
+        confidence,
+        unclearText: records.flatMap((source) => Array.isArray(source.unclearText) ? source.unclearText : []).filter((item) => typeof item === "string"),
+      });
+    } catch (structuredError) {
+      console.warn("Bookmoth structured OCR retrying as plain transcription", structuredError);
+      const plainText = await callOllama(config, {
+        ...common,
+        messages: [{
+          role: "user",
+          content: "Transcribe only the text visibly present in this image. Do not explain, complete, correct, or add facts. Mark uncertain fragments with [unclear]. Return only the transcription.",
+          images: [image],
+        }],
+      });
+      extractedSources.push({
+        sourceId,
+        extractedText: plainText.trim() || "No readable text found.",
+        confidence: "low",
+        unclearText: ["Structured confidence review failed. Verify this source against the original image."],
+      });
+    }
   }
-  if (!Array.isArray(extraction.sources) || extraction.sources.length !== body.sources.length) {
-    throw new ProviderError("The local model did not return one source record per image. Try fewer screenshots.", 502);
-  }
-  const extractedSources = extraction.sources.map((source, index) => ({
-    sourceId: `S${index + 1}`,
-    extractedText: typeof source.extractedText === "string" ? source.extractedText : "No readable text found.",
-    confidence: ["high", "medium", "low"].includes(source.confidence) ? source.confidence : "low",
-    unclearText: Array.isArray(source.unclearText) ? source.unclearText.filter((item) => typeof item === "string") : [],
-  }));
   return buildEvidenceLockedPack(extractedSources);
 }
 

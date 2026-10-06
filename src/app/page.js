@@ -80,6 +80,7 @@ export default function Home() {
   const [dragging, setDragging] = useState(false);
   const [providerStatus, setProviderStatus] = useState(null);
   const fileInput = useRef(null);
+  const cameraInput = useRef(null);
 
   const totalSize = useMemo(
     () => sources.reduce((sum, source) => sum + source.size, 0),
@@ -297,6 +298,8 @@ export default function Home() {
               <small>PNG, JPG, or WebP · up to 8 images · 18 MB total</small>
             </button>
             <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={(event) => addFiles(event.target.files)} />
+            <button className="button full" type="button" onClick={() => cameraInput.current?.click()}>Take a photo on this device</button>
+            <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(event) => addFiles(event.target.files)} />
 
             <div className="source-list" aria-live="polite">
               {sources.length === 0 && <p className="empty-copy">Each image will receive a source ID so you can trace the finished material back to it.</p>}

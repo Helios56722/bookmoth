@@ -1,5 +1,7 @@
 # Bookmoth Visual Quality Correction — 2026-10-07
 
+> **Superseded and rejected:** Jaylan rejected the photosynthesis source image after this review. The current sample and export are the photography-exposure revision recorded in `BOOKMOTH_SAMPLE_TOPIC_REPLACEMENT_2026-10-07.md`.
+
 ## Decision
 
 The earlier photosynthesis illustration and `bookmoth-collage.png` export are rejected. The source illustration was visually crude, and the export placed one small card in the upper-left of a 1400 × 1000 canvas while leaving most of the canvas empty. A successful download did not make that output product-quality.

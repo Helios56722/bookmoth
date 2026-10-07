@@ -296,93 +296,95 @@ export function learningPackToMarkdown(pack) {
 
 export function sampleLearningPack() {
   return normalizeLearningPack({
-    title: "Photosynthesis: a source-grounded review",
+    title: "Manual exposure: a source-grounded review",
     overview:
-      "Plants convert light energy into stored chemical energy. The source notes connect the chloroplast, reactants, products, and the two major stages of the process.",
+      "Aperture and shutter speed control how light is captured, while ISO changes how strongly the camera amplifies the signal. The source connects each control to a visible creative effect.",
     sources: [
       {
         sourceId: "S1",
         extractedText:
-          "Photosynthesis uses carbon dioxide, water, and light. It produces glucose and oxygen. Chlorophyll in chloroplasts captures light energy.",
+          "Aperture controls the size of the lens opening, affecting light and depth of field. Shutter speed controls how long light reaches the sensor, affecting brightness and motion blur. ISO amplifies the captured signal, affecting image brightness and visible noise. Choose the creative priority first, meter the scene, then balance the other controls.",
         confidence: "high",
         unclearText: [],
       },
     ],
     concepts: [
       {
-        term: "Photosynthesis",
-        explanation: "The process plants use to store light energy in glucose.",
+        term: "Aperture",
+        explanation: "The lens opening that affects incoming light and depth of field.",
         sourceIds: ["S1"],
       },
       {
-        term: "Chlorophyll",
-        explanation: "A pigment in chloroplasts that absorbs light energy.",
+        term: "Shutter speed",
+        explanation: "The time light reaches the sensor, affecting brightness and motion blur.",
         sourceIds: ["S1"],
       },
       {
-        term: "Reactants and products",
-        explanation: "Carbon dioxide and water are used; glucose and oxygen are produced.",
+        term: "ISO",
+        explanation: "Signal amplification that affects image brightness and visible noise.",
         sourceIds: ["S1"],
       },
     ],
     trailMap: {
       glowPoints: [
-        { id: "G1", label: "Capture light", whyItMatters: "Chlorophyll is the bridge between incoming light and the reactions that store energy.", sourceIds: ["S1"] },
-        { id: "G2", label: "Build glucose", whyItMatters: "The process stores captured energy in a chemical form the plant can use.", sourceIds: ["S1"] },
-        { id: "G3", label: "Release oxygen", whyItMatters: "Oxygen is a product of the source-described process and an important environmental outcome.", sourceIds: ["S1"] },
+        { id: "G1", label: "Choose the look", whyItMatters: "Decide whether depth, motion, or noise matters most before changing settings.", sourceIds: ["S1"] },
+        { id: "G2", label: "Set aperture", whyItMatters: "Aperture shapes depth of field while changing how much light enters the lens.", sourceIds: ["S1"] },
+        { id: "G3", label: "Set shutter speed", whyItMatters: "Shutter time determines whether motion freezes or blurs.", sourceIds: ["S1"] },
+        { id: "G4", label: "Balance ISO", whyItMatters: "ISO can raise brightness, with more visible noise as a possible tradeoff.", sourceIds: ["S1"] },
       ],
       threads: [
-        { fromId: "G1", toId: "G2", relationship: "Captured light supplies the energy used to form glucose." },
-        { fromId: "G2", toId: "G3", relationship: "Both appear among the products and outcomes described in the notes." },
+        { fromId: "G1", toId: "G2", relationship: "The intended depth of field helps determine the aperture choice." },
+        { fromId: "G2", toId: "G3", relationship: "Shutter speed can balance the light change while controlling motion." },
+        { fromId: "G3", toId: "G4", relationship: "ISO can help reach the target brightness after creative settings are chosen." },
       ],
       blindSpots: [
-        { question: "What happens in each named stage?", reason: "The sample source names the process but does not explain the stages in enough detail.", sourceIds: ["S1"] },
+        { question: "Which exact settings should this scene use?", reason: "The source explains the relationships, but the correct numbers depend on the available light, subject motion, lens, and desired look.", sourceIds: ["S1"] },
       ],
       recallLoop: [
-        "Cover the source and rebuild the G1 → G2 connection aloud.",
-        "Explain why oxygen belongs on the trail without looking at the answer.",
-        "Return tomorrow and draw the three points from memory before opening the guide.",
+        "Name the visual effect controlled by each setting without looking.",
+        "Choose a subject and explain which setting you would prioritize first.",
+        "Return tomorrow and rebuild the four-step exposure-thinking sequence from memory.",
       ],
     },
     reportSections: [
       {
-        heading: "How the process works",
-        body: "Light captured by chlorophyll powers reactions that ultimately store energy in glucose.",
+        heading: "Creative controls",
+        body: "Aperture shapes depth of field, while shutter speed shapes the appearance of motion.",
         sourceIds: ["S1"],
       },
       {
-        heading: "Why it matters",
-        body: "The process supplies chemical energy to plants and releases oxygen into the environment.",
+        heading: "Brightness and noise",
+        body: "ISO amplifies the captured signal and can make visible noise more apparent.",
         sourceIds: ["S1"],
       },
     ],
     flashcards: [
-      { front: "Where does photosynthesis occur?", back: "In chloroplasts.", sourceIds: ["S1"] },
-      { front: "What pigment captures light?", back: "Chlorophyll.", sourceIds: ["S1"] },
-      { front: "Name the main products.", back: "Glucose and oxygen.", sourceIds: ["S1"] },
+      { front: "Which control changes depth of field?", back: "Aperture.", sourceIds: ["S1"] },
+      { front: "Which control changes motion blur?", back: "Shutter speed.", sourceIds: ["S1"] },
+      { front: "What can increase along with ISO?", back: "Visible image noise.", sourceIds: ["S1"] },
     ],
     practice: [
       {
-        question: "Explain how sunlight becomes stored energy in a plant.",
-        hint: "Connect chlorophyll to glucose.",
-        answer: "Chlorophyll absorbs light, and photosynthetic reactions use that energy to make glucose.",
+        question: "You want a moving subject to look sharp. Which control should you prioritize, and what must you balance afterward?",
+        hint: "Begin with the control that affects motion blur.",
+        answer: "Prioritize a faster shutter speed, then balance aperture and ISO to reach the intended brightness and depth of field.",
         sourceIds: ["S1"],
       },
     ],
     collage: {
-      title: "Photosynthesis at a glance",
-      caption: "Use the source and four checkpoints as a quick visual review.",
+      title: "Manual exposure at a glance",
+      caption: "Use the source and four checkpoints to connect camera settings with visible results.",
       callouts: [
-        { text: "Light, water, and carbon dioxide are the inputs.", sourceIds: ["S1"] },
-        { text: "Chlorophyll captures light energy inside chloroplasts.", sourceIds: ["S1"] },
-        { text: "The process stores captured energy in glucose.", sourceIds: ["S1"] },
-        { text: "Oxygen is released as a product.", sourceIds: ["S1"] },
+        { text: "Aperture affects incoming light and depth of field.", sourceIds: ["S1"] },
+        { text: "Shutter speed affects exposure time and motion blur.", sourceIds: ["S1"] },
+        { text: "ISO amplifies the captured signal and can reveal more noise.", sourceIds: ["S1"] },
+        { text: "Choose the creative priority first, then balance the remaining controls.", sourceIds: ["S1"] },
       ],
     },
     reviewPlan: [
-      "Explain the process aloud without looking at the guide.",
-      "Answer the practice question, then check the cited source.",
-      "Review the flashcards again tomorrow.",
+      "Explain the visual effect of each control without looking at the guide.",
+      "Answer the moving-subject practice question, then check the cited source.",
+      "Photograph one scene with two different creative priorities and compare the results.",
     ],
     cautions: ["This sample demonstrates the interface. Real results should be checked against every source image."],
   });

@@ -159,15 +159,15 @@ export default function Home() {
     setSources([
       {
         id: "sample-source",
-        name: "photosynthesis-study-map.svg",
-        type: "image/svg+xml",
+        name: "manual-exposure-guide.png",
+        type: "image/png",
         size: 0,
-        dataUrl: "/sample-notes.svg",
+        dataUrl: "/sample-notes.png",
         displayOnly: true,
       },
     ]);
-    setContext("Intro biology notes");
-    setGoal("Explain the process and remember the inputs and outputs");
+    setContext("Photography fundamentals");
+    setGoal("Understand how aperture, shutter speed, and ISO change a photo");
     setReferenceUrl("");
     setStudyUseAccepted(true);
     setPack(sampleLearningPack());

@@ -301,6 +301,15 @@ export default function Home() {
             <button className="button full" type="button" onClick={() => cameraInput.current?.click()}>Take a photo on this device</button>
             <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(event) => addFiles(event.target.files)} />
 
+            <div className="capture-guide" aria-label="Photo checklist">
+              <b>Before you add a photo</b>
+              <ul>
+                <li>Fill the frame with the page or question.</li>
+                <li>Keep the words sharp, straight, and free of glare.</li>
+                <li>Crop out menus, tabs, and unrelated notes when possible.</li>
+              </ul>
+            </div>
+
             <div className="source-list" aria-live="polite">
               {sources.length === 0 && <p className="empty-copy">Each image will receive a source ID so you can trace the finished material back to it.</p>}
               {sources.map((source, index) => (

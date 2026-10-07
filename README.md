@@ -87,7 +87,7 @@ npm run build
 
 The repository's automated workflow runs the same test, lint, and production-build checks on pushes and pull requests.
 
-Verified locally on 2026-10-06 with Ollama `0.35.1` and `qwen2.5vl:7b`: a synthetic study-note screenshot completed through the production API in about six seconds with the model already loaded. OCR returned the six visible statements, every one of the 36 factual answer fields reused source wording, all output sections were present, and the automated citation/thread checks found zero invalid references. This is a focused integration test, not proof that OCR will be accurate on every handwriting style, photo, or subject. Seven unit tests, ESLint, the optimized Next.js build, desktop browser review, 390 × 844 responsive review, and the no-warning console check also passed.
+Verified locally on 2026-10-07 with Ollama `qwen2.5vl:7b`: a slightly rotated synthetic phone photo with mild blur and glare completed through the production API in 8.0 seconds. All five expected water-cycle terms were extracted, the result contained 12 source-linked concepts, and automated checks found zero invalid citations. The same fixture also completed through the browser interface. Seven unit tests, ESLint, the optimized Next.js build, desktop browser review, 390 × 844 responsive review, text-overflow checks, and the no-warning console check passed. See [`docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md`](docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md). This remains a controlled operator test, not proof of accuracy across handwriting, equations, damaged pages, low light, or all real phone photos.
 
 ## Learner validation
 

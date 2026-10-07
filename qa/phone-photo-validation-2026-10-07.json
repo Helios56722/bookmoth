@@ -1,0 +1,553 @@
+{
+  "checkedAt": "2026-10-07T11:48:52.723Z",
+  "elapsedSeconds": 8,
+  "httpStatus": 200,
+  "provider": {
+    "name": "ollama",
+    "model": "qwen2.5vl:7b",
+    "local": true
+  },
+  "sourceCount": 1,
+  "conceptCount": 12,
+  "missingTerms": [],
+  "invalidCitationCount": 0,
+  "unclearText": [],
+  "extractedText": "Water Cycle Review\n1. Evaporation changes liquid water\ninto water vapor.\n2. Condensation forms clouds when\nwater vapor cools.\n3. Precipitation returns water to\nEarth's surface.\n4. Collection stores water in rivers,\nlakes, soil, and oceans.\n5. The Sun supplies energy for\nevaporation.\n\nStudy goal\nExplain the sequence and the Sun's role.",
+  "passed": true,
+  "payload": {
+    "pack": {
+      "title": "Water Cycle Review: evidence-locked study guide",
+      "overview": "This guide organizes 12 source statements from 1 image. Answers preserve the extracted wording so each statement can be checked against its source.",
+      "sources": [
+        {
+          "sourceId": "S1",
+          "extractedText": "Water Cycle Review\n1. Evaporation changes liquid water\ninto water vapor.\n2. Condensation forms clouds when\nwater vapor cools.\n3. Precipitation returns water to\nEarth's surface.\n4. Collection stores water in rivers,\nlakes, soil, and oceans.\n5. The Sun supplies energy for\nevaporation.\n\nStudy goal\nExplain the sequence and the Sun's role.",
+          "confidence": "high",
+          "unclearText": []
+        }
+      ],
+      "concepts": [
+        {
+          "term": "Evaporation changes liquid water",
+          "explanation": "Evaporation changes liquid water",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "into water vapor",
+          "explanation": "into water vapor.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "Condensation forms clouds when",
+          "explanation": "Condensation forms clouds when",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "water vapor cools",
+          "explanation": "water vapor cools.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "Precipitation returns water to",
+          "explanation": "Precipitation returns water to",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "Earth's surface",
+          "explanation": "Earth's surface.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "Collection stores water in rivers,",
+          "explanation": "Collection stores water in rivers,",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "lakes, soil, and oceans",
+          "explanation": "lakes, soil, and oceans.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "The Sun supplies energy for",
+          "explanation": "The Sun supplies energy for",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "evaporation",
+          "explanation": "evaporation.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "Study goal",
+          "explanation": "Study goal",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "term": "Source point 12",
+          "explanation": "Explain the sequence and the Sun's role.",
+          "sourceIds": [
+            "S1"
+          ]
+        }
+      ],
+      "trailMap": {
+        "glowPoints": [
+          {
+            "id": "G1",
+            "label": "Evaporation changes liquid water",
+            "whyItMatters": "Evaporation changes liquid water",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "id": "G2",
+            "label": "into water vapor",
+            "whyItMatters": "into water vapor.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "id": "G3",
+            "label": "Condensation forms clouds when",
+            "whyItMatters": "Condensation forms clouds when",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "id": "G4",
+            "label": "water vapor cools",
+            "whyItMatters": "water vapor cools.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "id": "G5",
+            "label": "Precipitation returns water to",
+            "whyItMatters": "Precipitation returns water to",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "id": "G6",
+            "label": "Earth's surface",
+            "whyItMatters": "Earth's surface.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "id": "G7",
+            "label": "Collection stores water in rivers,",
+            "whyItMatters": "Collection stores water in rivers,",
+            "sourceIds": [
+              "S1"
+            ]
+          }
+        ],
+        "threads": [],
+        "blindSpots": [
+          {
+            "question": "Which source statements are directly connected, and what is the relationship?",
+            "reason": "The source text lists statements, but their order alone does not prove a sequence or relationship.",
+            "sourceIds": [
+              "S1"
+            ]
+          }
+        ],
+        "recallLoop": [
+          "Cover the answers and recall each source statement in your own words.",
+          "Check every answer against its cited source, then correct anything you missed.",
+          "Repeat the hardest cards tomorrow before rereading the source."
+        ]
+      },
+      "reportSections": [
+        {
+          "heading": "Evaporation changes liquid water",
+          "body": "Evaporation changes liquid water",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "into water vapor",
+          "body": "into water vapor.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "Condensation forms clouds when",
+          "body": "Condensation forms clouds when",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "water vapor cools",
+          "body": "water vapor cools.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "Precipitation returns water to",
+          "body": "Precipitation returns water to",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "Earth's surface",
+          "body": "Earth's surface.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "Collection stores water in rivers,",
+          "body": "Collection stores water in rivers,",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "lakes, soil, and oceans",
+          "body": "lakes, soil, and oceans.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "The Sun supplies energy for",
+          "body": "The Sun supplies energy for",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "evaporation",
+          "body": "evaporation.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "Study goal",
+          "body": "Study goal",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "heading": "Source point 12",
+          "body": "Explain the sequence and the Sun's role.",
+          "sourceIds": [
+            "S1"
+          ]
+        }
+      ],
+      "flashcards": [
+        {
+          "front": "What does the source state about “Evaporation changes liquid water”?",
+          "back": "Evaporation changes liquid water",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “into water vapor”?",
+          "back": "into water vapor.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “Condensation forms clouds when”?",
+          "back": "Condensation forms clouds when",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “water vapor cools”?",
+          "back": "water vapor cools.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “Precipitation returns water to”?",
+          "back": "Precipitation returns water to",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “Earth's surface”?",
+          "back": "Earth's surface.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “Collection stores water in rivers,”?",
+          "back": "Collection stores water in rivers,",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “lakes, soil, and oceans”?",
+          "back": "lakes, soil, and oceans.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “The Sun supplies energy for”?",
+          "back": "The Sun supplies energy for",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “evaporation”?",
+          "back": "evaporation.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “Study goal”?",
+          "back": "Study goal",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "front": "What does the source state about “Source point 12”?",
+          "back": "Explain the sequence and the Sun's role.",
+          "sourceIds": [
+            "S1"
+          ]
+        }
+      ],
+      "practice": [
+        {
+          "question": "Without looking, write the statement associated with “Evaporation changes liquid water.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "Evaporation changes liquid water",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “into water vapor.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "into water vapor.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “Condensation forms clouds when.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "Condensation forms clouds when",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “water vapor cools.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "water vapor cools.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “Precipitation returns water to.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "Precipitation returns water to",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “Earth's surface.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "Earth's surface.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “Collection stores water in rivers,.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "Collection stores water in rivers,",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “lakes, soil, and oceans.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "lakes, soil, and oceans.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “The Sun supplies energy for.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "The Sun supplies energy for",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “evaporation.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "evaporation.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “Study goal.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "Study goal",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "question": "Without looking, write the statement associated with “Source point 12.”",
+          "hint": "Check S1 only after attempting an answer.",
+          "answer": "Explain the sequence and the Sun's role.",
+          "sourceIds": [
+            "S1"
+          ]
+        }
+      ],
+      "collage": {
+        "title": "Water Cycle Review",
+        "caption": "A compact board made from the exact statements extracted from your images.",
+        "callouts": [
+          {
+            "text": "Evaporation changes liquid water",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "into water vapor.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "Condensation forms clouds when",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "water vapor cools.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "Precipitation returns water to",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "Earth's surface.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "Collection stores water in rivers,",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "lakes, soil, and oceans.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "The Sun supplies energy for",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "evaporation.",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "Study goal",
+            "sourceIds": [
+              "S1"
+            ]
+          },
+          {
+            "text": "Explain the sequence and the Sun's role.",
+            "sourceIds": [
+              "S1"
+            ]
+          }
+        ]
+      },
+      "reviewPlan": [
+        "Review the extracted text beside the original images and correct any OCR mistakes.",
+        "Complete the practice prompts without looking at the answers.",
+        "Return tomorrow and retry only the cards you missed."
+      ],
+      "cautions": [
+        "Local evidence lock keeps factual answers in the extracted source wording. OCR can still be wrong, so compare each cited source with the original image."
+      ]
+    },
+    "provider": {
+      "name": "ollama",
+      "model": "qwen2.5vl:7b",
+      "local": true
+    }
+  }
+}

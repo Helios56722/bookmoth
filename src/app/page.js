@@ -9,6 +9,7 @@ import {
   sampleLearningPack,
   validateSources,
 } from "@/lib/bookmoth";
+import { buildCollageSvg } from "@/lib/collage-template";
 
 const outputTabs = [
   ["guide", "Study guide"],
@@ -24,10 +25,10 @@ function MothMark({ compact = false }) {
     <span className={compact ? "moth-mark compact" : "moth-mark"} aria-hidden="true">
       <NextImage
         className="moth-mark-image"
-        src="/bookmoth-moth-mark.png"
+        src="/bookmoth-brand-figure.png"
         alt=""
-        width={1025}
-        height={685}
+        width={1024}
+        height={1024}
         sizes={compact ? "54px" : "280px"}
       />
     </span>
@@ -158,7 +159,7 @@ export default function Home() {
     setSources([
       {
         id: "sample-source",
-        name: "photosynthesis-notes.svg",
+        name: "photosynthesis-study-map.svg",
         type: "image/svg+xml",
         size: 0,
         dataUrl: "/sample-notes.svg",
@@ -194,51 +195,40 @@ export default function Home() {
 
   async function exportCollage() {
     if (!pack || !sources.length) return;
+    const embeddedSources = await Promise.all(sources.slice(0, 4).map(async (source) => {
+      if (source.dataUrl.startsWith("data:")) return source;
+      const response = await fetch(source.dataUrl);
+      const blob = await response.blob();
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      return { ...source, dataUrl };
+    }));
+    const svg = buildCollageSvg(pack.collage, embeddedSources);
+    const svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    const image = await new Promise((resolve, reject) => {
+      const rendered = new Image();
+      rendered.onload = () => resolve(rendered);
+      rendered.onerror = () => reject(new Error("Bookmoth could not render the visual study board."));
+      rendered.src = svgUrl;
+    });
     const canvas = document.createElement("canvas");
-    canvas.width = 1400;
-    canvas.height = 1000;
+    canvas.width = 1600;
+    canvas.height = 1100;
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#17101f";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#f6efe4";
-    ctx.font = "700 54px Georgia";
-    ctx.fillText(pack.collage.title, 70, 85);
-    ctx.fillStyle = "#baa9c9";
-    ctx.font = "28px Arial";
-    ctx.fillText(pack.collage.caption.slice(0, 76), 72, 130);
-
-    const images = await Promise.all(sources.map((source) => new Promise((resolve) => {
-      const image = new Image();
-      image.onload = () => resolve({ image, source });
-      image.onerror = () => resolve(null);
-      image.src = source.dataUrl;
-    })));
-    const usable = images.filter(Boolean);
-    const cellWidth = 600;
-    const cellHeight = 310;
-    usable.slice(0, 4).forEach(({ image, source }, index) => {
-      const x = 70 + (index % 2) * 650;
-      const y = 180 + Math.floor(index / 2) * 365;
-      const scale = Math.min(cellWidth / image.width, cellHeight / image.height);
-      const width = image.width * scale;
-      const height = image.height * scale;
-      ctx.fillStyle = "#2b2037";
-      ctx.fillRect(x - 12, y - 12, cellWidth + 24, cellHeight + 58);
-      ctx.drawImage(image, x + (cellWidth - width) / 2, y + (cellHeight - height) / 2, width, height);
-      ctx.fillStyle = "#f0b976";
-      ctx.font = "700 22px Arial";
-      ctx.fillText(`S${index + 1}  ${source.name.slice(0, 38)}`, x, y + cellHeight + 30);
-    });
-    ctx.fillStyle = "#f6efe4";
-    ctx.font = "22px Arial";
-    pack.collage.callouts.slice(0, 3).forEach((item, index) => {
-      ctx.fillText(`• ${item.text.slice(0, 92)}`, 72, 930 + index * 30);
-    });
-    const href = canvas.toDataURL("image/png");
-    const anchor = document.createElement("a");
-    anchor.href = href;
-    anchor.download = "bookmoth-collage.png";
-    anchor.click();
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(svgUrl);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const href = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.download = "bookmoth-visual-study-board.png";
+      anchor.click();
+    }, "image/png");
   }
 
   return (
@@ -271,7 +261,7 @@ export default function Home() {
         </div>
         <div className="hero-figure" aria-label="Bookmoth brand figure concept">
           <span className="orbit orbit-one" /><span className="orbit orbit-two" />
-          <NextImage className="brand-figure-image" src="/bookmoth-brand-figure.png" alt="A dark-plum and orange moth hovering above an open book" width={1024} height={1024} priority />
+          <NextImage className="brand-figure-image" src="/bookmoth-brand-figure.png" alt="A dark-plum and orange moth resting on an open book" width={1024} height={1024} priority />
           <div className="figure-note"><b>Meet the Bookmoth</b><span>Generated locally in ComfyUI, then selected for its clear silhouette.</span></div>
         </div>
       </section>
@@ -375,7 +365,7 @@ export default function Home() {
                   {activeTab === "trail" && <div className="content-stack trail-view"><div className="trail-intro"><div><p className="eyebrow"><span /> Evidence map</p><h4>Follow the ideas. Notice the dark.</h4></div><p>Glow points are supported ideas. Threads show source-backed connections. Blind spots stay visible when the screenshots cannot finish the explanation.</p></div><div className="glow-grid">{pack.trailMap.glowPoints.map((point, index) => <article className="glow-point" key={`${point.id}-${index}`}><div><b>{point.id}</b><SourcePills ids={point.sourceIds} /></div><h5>{point.label}</h5><p>{point.whyItMatters}</p></article>)}</div><h4>Threads</h4><div className="thread-list">{pack.trailMap.threads.map((thread, index) => <article key={`${thread.fromId}-${thread.toId}-${index}`}><b>{thread.fromId}</b><span aria-hidden="true">→</span><b>{thread.toId}</b><p>{thread.relationship}</p></article>)}</div><h4>Blind spots</h4><div className="blind-list">{pack.trailMap.blindSpots.length ? pack.trailMap.blindSpots.map((spot, index) => <article key={`${spot.question}-${index}`}><div><span aria-hidden="true">?</span><h5>{spot.question}</h5><SourcePills ids={spot.sourceIds} /></div><p>{spot.reason}</p></article>) : <p className="helper-copy">No source gap was identified. Verify the full pack before relying on it.</p>}</div><h4>Recall loop</h4><ol className="review-list">{pack.trailMap.recallLoop.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ol></div>}
                   {activeTab === "report" && <div className="content-stack"><h4>Structured report</h4>{pack.reportSections.map((item, index) => <article className="report-section" key={`${item.heading}-${index}`}><div><h5>{item.heading}</h5><SourcePills ids={item.sourceIds} /></div><p>{item.body}</p></article>)}</div>}
                   {activeTab === "practice" && <div className="content-stack"><h4>Flashcards</h4><div className="flashcard-grid">{pack.flashcards.map((item, index) => <details key={`${item.front}-${index}`}><summary>{item.front}</summary><p>{item.back}</p><SourcePills ids={item.sourceIds} /></details>)}</div><h4>Practice questions</h4>{pack.practice.map((item, index) => <details className="practice-item" key={`${item.question}-${index}`}><summary><span>{index + 1}</span>{item.question}</summary><p><b>Hint:</b> {item.hint}</p><p><b>Answer:</b> {item.answer}</p><SourcePills ids={item.sourceIds} /></details>)}</div>}
-                  {activeTab === "collage" && <div className="content-stack"><div className="collage-heading"><div><h4>{pack.collage.title}</h4><p>{pack.collage.caption}</p></div><button type="button" onClick={exportCollage}>Download PNG ↓</button></div><div className="collage-grid">{sources.map((source, index) => <figure key={source.id}><NextImage src={source.dataUrl} alt={`Source S${index + 1}: ${source.name}`} width={800} height={600} unoptimized /><figcaption>S{index + 1} · {source.name}</figcaption></figure>)}</div><ul className="callout-list">{pack.collage.callouts.map((item, index) => <li key={`${item.text}-${index}`}><SourcePills ids={item.sourceIds} /><span>{item.text}</span></li>)}</ul></div>}
+                  {activeTab === "collage" && <div className="content-stack"><div className="collage-heading"><div><h4>{pack.collage.title}</h4><p>{pack.collage.caption}</p></div><button type="button" onClick={exportCollage}>Download PNG ↓</button></div><div className="collage-board"><section className="collage-sources" aria-label="Source material"><p>Source material · {sources.length} {sources.length === 1 ? "item" : "items"}</p><div className="collage-grid">{sources.map((source, index) => <figure key={source.id}><NextImage src={source.dataUrl} alt={`Source S${index + 1}: ${source.name}`} width={800} height={600} unoptimized /><figcaption><b>S{index + 1}</b><span>{source.name}</span></figcaption></figure>)}</div></section><aside className="collage-review"><h5>Quick review</h5><p>Explain each point in your own words, then check it against the source.</p><ul className="callout-list">{pack.collage.callouts.map((item, index) => <li key={`${item.text}-${index}`}><SourcePills ids={item.sourceIds} /><span>{item.text}</span></li>)}</ul></aside></div></div>}
                   {activeTab === "sources" && <div className="content-stack"><h4>OCR and source check</h4><p className="helper-copy">Low confidence and unclear text are review prompts, not automatic corrections.</p>{pack.sources.map((source, index) => <article className="source-extract" key={`${source.sourceId}-${index}`}><div><h5>{source.sourceId}</h5><span className={`confidence ${source.confidence}`}>{source.confidence} confidence</span></div><p>{source.extractedText}</p>{source.unclearText.length > 0 && <div className="unclear"><b>Unclear in the image</b>{source.unclearText.map((item, itemIndex) => <span key={`${item}-${itemIndex}`}>{item}</span>)}</div>}</article>)}{pack.cautions.length > 0 && <div className="caution-box"><b>Check before relying on this</b>{pack.cautions.map((item, index) => <p key={`${item}-${index}`}>{item}</p>)}</div>}</div>}
                 </div>
               </>

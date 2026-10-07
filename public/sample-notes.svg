@@ -1,9 +1,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
-  <title id="title">Sample photosynthesis notes</title><desc id="desc">A diagram showing inputs and outputs of photosynthesis.</desc>
-  <rect width="1200" height="800" fill="#f5efdf"/><rect x="56" y="54" width="1088" height="692" rx="22" fill="#fffaf0" stroke="#725782" stroke-width="5"/>
-  <text x="105" y="145" font-family="Georgia" font-size="62" fill="#36243e">Photosynthesis</text><path d="M105 175h990" stroke="#dbac63" stroke-width="5"/>
-  <circle cx="880" cy="330" r="84" fill="#f2bf59"/><path d="M638 610c105-188 130-285 191-309-23 136-10 226-191 309z" fill="#60a66e"/><path d="M640 605c-117-97-139-183-88-242 104 61 139 140 88 242z" fill="#74b881"/><path d="M640 605v75" stroke="#456d4c" stroke-width="20"/>
-  <g font-family="Arial" font-size="34" fill="#44364b"><text x="110" y="270">Inputs</text><text x="110" y="325">• carbon dioxide</text><text x="110" y="375">• water</text><text x="110" y="425">• light energy</text><text x="870" y="520">Outputs</text><text x="870" y="575">• glucose</text><text x="870" y="625">• oxygen</text></g>
-  <path d="M390 350c100-40 156-48 225-24" fill="none" stroke="#8062c9" stroke-width="8" marker-end="url(#arrow)"/><path d="M797 524c44-24 70-35 104-35" fill="none" stroke="#8062c9" stroke-width="8" marker-end="url(#arrow)"/>
-  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0 0L8 3 0 6z" fill="#8062c9"/></marker></defs>
+  <title id="title">Photosynthesis study map</title>
+  <desc id="desc">A structured biology study sheet showing how light, water, and carbon dioxide become glucose and oxygen inside a leaf.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#f3ead8"/></linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8ac68d"/><stop offset="1" stop-color="#2f7651"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#2b1833" flood-opacity=".18"/></filter>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5 0 10z" fill="#4d8b62"/></marker>
+    <marker id="arrowAmber" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5 0 10z" fill="#d59838"/></marker>
+  </defs>
+  <rect width="1200" height="800" fill="#e9dfcd"/>
+  <rect x="40" y="34" width="1120" height="732" rx="32" fill="url(#paper)" filter="url(#shadow)"/>
+  <rect x="40" y="34" width="14" height="732" rx="7" fill="#4b2b53"/>
+
+  <text x="92" y="98" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="4" fill="#8a6c90">BIOLOGY  ·  ENERGY TRANSFER</text>
+  <text x="90" y="165" font-family="Georgia, serif" font-size="58" font-weight="600" fill="#34233c">Photosynthesis</text>
+  <text x="92" y="205" font-family="Arial, sans-serif" font-size="23" fill="#725f78">How plants turn light into stored chemical energy</text>
+  <path d="M90 232H1112" stroke="#d6c4ae" stroke-width="2"/>
+
+  <g transform="translate(90 278)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="2.5" fill="#8a6c90">INPUTS</text>
+    <g transform="translate(0 28)">
+      <rect width="250" height="72" rx="16" fill="#fff" stroke="#ddcfbc"/>
+      <circle cx="38" cy="36" r="20" fill="#f4bb4f"/><path d="M38 7v12M38 53v12M9 36h12M55 36h12M18 16l8 8M50 48l8 8M18 56l8-8M50 24l8-8" stroke="#d18e27" stroke-width="4" stroke-linecap="round"/>
+      <text x="72" y="31" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#392d3d">Light energy</text><text x="72" y="53" font-family="Arial, sans-serif" font-size="15" fill="#796b7e">captured by chlorophyll</text>
+    </g>
+    <g transform="translate(0 116)">
+      <rect width="250" height="72" rx="16" fill="#fff" stroke="#ddcfbc"/>
+      <path d="M38 12C24 32 20 40 20 48a18 18 0 0036 0c0-8-5-18-18-36z" fill="#6bb6d9"/>
+      <text x="72" y="31" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#392d3d">Water</text><text x="72" y="53" font-family="Arial, sans-serif" font-size="15" fill="#796b7e">absorbed by the roots</text>
+    </g>
+    <g transform="translate(0 204)">
+      <rect width="250" height="72" rx="16" fill="#fff" stroke="#ddcfbc"/>
+      <g fill="none" stroke="#8a6c90" stroke-width="3"><circle cx="27" cy="36" r="13"/><circle cx="51" cy="36" r="13"/></g>
+      <text x="72" y="31" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#392d3d">Carbon dioxide</text><text x="72" y="53" font-family="Arial, sans-serif" font-size="15" fill="#796b7e">enters through stomata</text>
+    </g>
+  </g>
+
+  <g transform="translate(425 270)">
+    <path d="M196 29C96 45 38 139 53 267c117-7 218-72 262-205C281 35 240 24 196 29z" fill="url(#leaf)"/>
+    <path d="M70 248c70-68 133-119 223-179" fill="none" stroke="#eaf2d8" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+    <path d="M135 189l-55-38M189 143l-54-55M236 105l-5-63M181 150l65 31" fill="none" stroke="#d8e8c4" stroke-width="4" stroke-linecap="round" opacity=".85"/>
+    <circle cx="309" cy="28" r="48" fill="#f4bb4f"/><g stroke="#d18e27" stroke-width="5" stroke-linecap="round"><path d="M309-38v20M309 74v20M243 28h20M355 28h20M262-19l14 14M342 61l14 14M262 75l14-14M342-5l14-14"/></g>
+    <path d="M-46 170H38" stroke="#4d8b62" stroke-width="5" marker-end="url(#arrowGreen)"/>
+    <path d="M318 186h82" stroke="#d59838" stroke-width="5" marker-end="url(#arrowAmber)"/>
+    <rect x="98" y="288" width="205" height="48" rx="24" fill="#3e2a47"/>
+    <text x="200" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#fff8ec">CHLOROPLAST</text>
+  </g>
+
+  <g transform="translate(875 278)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="2.5" fill="#8a6c90">PRODUCTS</text>
+    <rect y="28" width="237" height="116" rx="18" fill="#f7e2b5" stroke="#dfb96d"/>
+    <circle cx="42" cy="69" r="20" fill="#d89b39"/><path d="M33 69h18M42 60v18" stroke="#fff4d8" stroke-width="4" stroke-linecap="round"/>
+    <text x="78" y="67" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#4a3420">Glucose</text><text x="78" y="93" font-family="Arial, sans-serif" font-size="16" fill="#725b42">stored chemical energy</text>
+    <rect y="162" width="237" height="116" rx="18" fill="#dceef3" stroke="#9ec5d1"/>
+    <g fill="none" stroke="#4c92aa" stroke-width="4"><circle cx="34" cy="202" r="15"/><circle cx="54" cy="202" r="15"/></g>
+    <text x="78" y="200" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#274b58">Oxygen</text><text x="78" y="226" font-family="Arial, sans-serif" font-size="16" fill="#4f6d77">released into the air</text>
+  </g>
+
+  <g transform="translate(90 672)">
+    <rect width="1022" height="58" rx="16" fill="#33233c"/>
+    <text x="28" y="37" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#f1bd72">6CO₂ + 6H₂O + light</text>
+    <path d="M360 29h96" stroke="#f1bd72" stroke-width="3" marker-end="url(#arrowAmber)"/>
+    <text x="486" y="37" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#fff7eb">C₆H₁₂O₆ + 6O₂</text>
+    <text x="982" y="37" text-anchor="end" font-family="Arial, sans-serif" font-size="17" fill="#cbbdce">matter is rearranged · energy is stored</text>
+  </g>
 </svg>

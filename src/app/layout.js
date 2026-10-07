@@ -5,11 +5,8 @@ export const metadata = {
   description: "An open-source learning studio that turns permitted screenshots into grounded study guides, reports, practice sets, and visual collages.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [
-      { url: "/bookmoth-icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/bookmoth-icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/bookmoth-apple-icon.png", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/bookmoth-brand-figure.png", sizes: "1024x1024", type: "image/png" }],
+    apple: [{ url: "/bookmoth-brand-figure.png", sizes: "1024x1024", type: "image/png" }],
   },
 };
 

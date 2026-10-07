@@ -371,10 +371,12 @@ export function sampleLearningPack() {
     ],
     collage: {
       title: "Photosynthesis at a glance",
-      caption: "Use the source card and callouts as a quick visual review.",
+      caption: "Use the source and four checkpoints as a quick visual review.",
       callouts: [
-        { text: "Inputs: carbon dioxide, water, and light", sourceIds: ["S1"] },
-        { text: "Outputs: glucose and oxygen", sourceIds: ["S1"] },
+        { text: "Light, water, and carbon dioxide are the inputs.", sourceIds: ["S1"] },
+        { text: "Chlorophyll captures light energy inside chloroplasts.", sourceIds: ["S1"] },
+        { text: "The process stores captured energy in glucose.", sourceIds: ["S1"] },
+        { text: "Oxygen is released as a product.", sourceIds: ["S1"] },
       ],
     },
     reviewPlan: [

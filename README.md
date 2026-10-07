@@ -89,6 +89,8 @@ The repository's automated workflow runs the same test, lint, and production-bui
 
 Verified locally on 2026-10-07 with Ollama `qwen2.5vl:7b`: a slightly rotated synthetic phone photo with mild blur and glare completed through the production API in 8.0 seconds. All five expected water-cycle terms were extracted, the result contained 12 source-linked concepts, and automated checks found zero invalid citations. The same fixture also completed through the browser interface. Seven unit tests, ESLint, the optimized Next.js build, desktop browser review, 390 × 844 responsive review, text-overflow checks, and the no-warning console check passed. See [`docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md`](docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md). This remains a controlled operator test, not proof of accuracy across handwriting, equations, damaged pages, low light, or all real phone photos.
 
+A second complete functional pass on 2026-10-07 retested the live local provider, phone-photo upload, generation, all six learning-pack views, invalid-input responses, Markdown export, JSON export, collage export, browser console, tests, lint, and production build. It also repaired ESLint coverage for tracked `.mjs` QA scripts. See [`docs/validation/FUNCTIONAL_VERIFICATION_2026-10-07.md`](docs/validation/FUNCTIONAL_VERIFICATION_2026-10-07.md).
+
 ## Learner validation
 
 The first validation round uses five short, anonymous usability sessions. Open `Open Learner Validation.cmd` on Windows for the local session recorder, or follow [`docs/validation/learner-test-guide.md`](docs/validation/learner-test-guide.md). The tracker stores records in the active browser and exports CSV or JSON; it does not send participant data anywhere.

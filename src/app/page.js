@@ -43,6 +43,84 @@ function SourcePills({ ids }) {
   );
 }
 
+function DeepLessonCard({ lesson, index }) {
+  const checked = lesson.verification === "source-checked";
+  return (
+    <article className="deep-lesson">
+      <header className="deep-lesson-header">
+        <span className="lesson-number">{String(index + 1).padStart(2, "0")}</span>
+        <div>
+          <p className="lesson-kicker">Detailed lesson</p>
+          <h5>{lesson.term}</h5>
+        </div>
+        <span className={`verification-badge ${checked ? "checked" : "review"}`}>
+          {checked ? "Source checked" : "Needs review"}
+        </span>
+        <SourcePills ids={lesson.sourceIds} />
+      </header>
+
+      <p className="learning-objective"><b>Learning objective</b>{lesson.learningObjective}</p>
+
+      <section className="direct-answer">
+        <p>Direct answer</p>
+        <strong>{lesson.directAnswer}</strong>
+      </section>
+
+      <section className="lesson-section">
+        <h6>Understand the idea</h6>
+        <p>{lesson.explanation}</p>
+      </section>
+
+      <section className="lesson-section">
+        <h6>Step by step</h6>
+        <ol className="lesson-steps">
+          {lesson.steps.map((step, stepIndex) => (
+            <li key={`${step.title}-${stepIndex}`}>
+              <span>{stepIndex + 1}</span>
+              <div><b>{step.title}</b><p>{step.explanation}</p></div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <div className="lesson-application-grid">
+        <section>
+          <h6>Why it matters</h6>
+          <p>{lesson.whyItMatters}</p>
+        </section>
+        <section>
+          <h6>Use it in context</h6>
+          <p>{lesson.example}</p>
+        </section>
+      </div>
+
+      <section className="lesson-section">
+        <h6>Common mistakes</h6>
+        <div className="mistake-list">
+          {lesson.commonMistakes.map((item, mistakeIndex) => (
+            <article key={`${item.mistake}-${mistakeIndex}`}>
+              <p><b>Mistake</b>{item.mistake}</p>
+              <p><b>Correction</b>{item.correction}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <details className="lesson-check">
+        <summary>Check your understanding</summary>
+        <p className="check-question">{lesson.check.question}</p>
+        <p><b>Hint:</b> {lesson.check.hint}</p>
+        <p><b>Answer:</b> {lesson.check.answer}</p>
+      </details>
+
+      <details className="evidence-drawer">
+        <summary>See the exact supporting evidence</summary>
+        {lesson.evidenceQuotes.map((quote, quoteIndex) => <blockquote key={`${quote}-${quoteIndex}`}>{quote}</blockquote>)}
+      </details>
+    </article>
+  );
+}
+
 function downloadText(filename, content, type = "text/markdown") {
   const blob = new Blob([content], { type });
   const href = URL.createObjectURL(blob);
@@ -144,6 +222,7 @@ export default function Home() {
           local: data.provider.local,
           provider: data.provider.name,
           model: data.provider.model,
+          teachingModel: data.provider.teachingModel,
           detail: data.provider.local ? "Learning pack created on this PC." : "Learning pack created with the configured cloud provider.",
         });
       }
@@ -324,13 +403,13 @@ export default function Home() {
             <div className={`provider-status ${providerStatus?.ready ? "ready" : providerStatus ? "blocked" : "checking"}`} role="status">
               <span aria-hidden="true" />
               <div>
-                <b>{providerStatus ? `${providerStatus.local ? "Local" : "Cloud"} AI · ${providerStatus.model}` : "Checking AI provider…"}</b>
+                <b>{providerStatus ? `${providerStatus.local ? "Local" : "Cloud"} AI · ${providerStatus.model}${providerStatus.teachingModel && providerStatus.teachingModel !== providerStatus.model ? ` + ${providerStatus.teachingModel}` : ""}` : "Checking AI provider…"}</b>
                 <small>{providerStatus?.detail || "Confirming the model before images are submitted."}</small>
               </div>
             </div>
 
             <button className="button primary full" type="button" disabled={busy || sources[0]?.displayOnly || providerStatus?.ready === false} onClick={createPack}>
-              {busy ? "Reading your sources…" : "Create learning pack"}
+              {busy ? "Building and checking lessons…" : "Create learning pack"}
             </button>
             {sources[0]?.displayOnly && <button className="button full" type="button" onClick={() => fileInput.current?.click()}>Replace sample with my images</button>}
             {message && <p className="status-message" role="status">{message}</p>}
@@ -361,7 +440,7 @@ export default function Home() {
                 </div>
 
                 <div className="tab-content">
-                  {activeTab === "guide" && <div className="content-stack"><h4>Core ideas</h4>{pack.concepts.map((item, index) => <article className="learning-card" key={`${item.term}-${index}`}><div><span>{String(index + 1).padStart(2, "0")}</span><h5>{item.term}</h5><SourcePills ids={item.sourceIds} /></div><p>{item.explanation}</p></article>)}<h4>Review plan</h4><ol className="review-list">{pack.reviewPlan.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ol></div>}
+                  {activeTab === "guide" && <div className="content-stack deep-guide"><section className={`evidence-review ${pack.evidenceReview.status}`}><div><span aria-hidden="true">{pack.evidenceReview.status === "source-checked" ? "✓" : "!"}</span><div><p>Evidence review</p><h4>{pack.evidenceReview.status === "source-checked" ? "Every displayed lesson passed the source gate." : "Bookmoth removed or limited unsupported teaching."}</h4></div></div><p>{pack.evidenceReview.note}</p><small>{pack.evidenceReview.acceptedLessons} accepted · {pack.evidenceReview.rejectedLessons} removed</small></section><div className="guide-introduction"><p className="eyebrow"><span /> Layered teaching</p><h4>Learn the idea, then prove you understand it.</h4><p>{pack.depthSummary}</p></div>{pack.deepLessons.length ? pack.deepLessons.map((lesson, index) => <DeepLessonCard lesson={lesson} index={index} key={`${lesson.term}-${index}`} />) : pack.concepts.map((item, index) => <article className="learning-card" key={`${item.term}-${index}`}><div><span>{String(index + 1).padStart(2, "0")}</span><h5>{item.term}</h5><SourcePills ids={item.sourceIds} /></div><p>{item.explanation}</p></article>)}<h4>Review plan</h4><ol className="review-list">{pack.reviewPlan.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ol></div>}
                   {activeTab === "trail" && <div className="content-stack trail-view"><div className="trail-intro"><div><p className="eyebrow"><span /> Evidence map</p><h4>Follow the ideas. Notice the dark.</h4></div><p>Glow points are supported ideas. Threads show source-backed connections. Blind spots stay visible when the screenshots cannot finish the explanation.</p></div><div className="glow-grid">{pack.trailMap.glowPoints.map((point, index) => <article className="glow-point" key={`${point.id}-${index}`}><div><b>{point.id}</b><SourcePills ids={point.sourceIds} /></div><h5>{point.label}</h5><p>{point.whyItMatters}</p></article>)}</div><h4>Threads</h4><div className="thread-list">{pack.trailMap.threads.map((thread, index) => <article key={`${thread.fromId}-${thread.toId}-${index}`}><b>{thread.fromId}</b><span aria-hidden="true">→</span><b>{thread.toId}</b><p>{thread.relationship}</p></article>)}</div><h4>Blind spots</h4><div className="blind-list">{pack.trailMap.blindSpots.length ? pack.trailMap.blindSpots.map((spot, index) => <article key={`${spot.question}-${index}`}><div><span aria-hidden="true">?</span><h5>{spot.question}</h5><SourcePills ids={spot.sourceIds} /></div><p>{spot.reason}</p></article>) : <p className="helper-copy">No source gap was identified. Verify the full pack before relying on it.</p>}</div><h4>Recall loop</h4><ol className="review-list">{pack.trailMap.recallLoop.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ol></div>}
                   {activeTab === "report" && <div className="content-stack"><h4>Structured report</h4>{pack.reportSections.map((item, index) => <article className="report-section" key={`${item.heading}-${index}`}><div><h5>{item.heading}</h5><SourcePills ids={item.sourceIds} /></div><p>{item.body}</p></article>)}</div>}
                   {activeTab === "practice" && <div className="content-stack"><h4>Flashcards</h4><div className="flashcard-grid">{pack.flashcards.map((item, index) => <details key={`${item.front}-${index}`}><summary>{item.front}</summary><p>{item.back}</p><SourcePills ids={item.sourceIds} /></details>)}</div><h4>Practice questions</h4>{pack.practice.map((item, index) => <details className="practice-item" key={`${item.question}-${index}`}><summary><span>{index + 1}</span>{item.question}</summary><p><b>Hint:</b> {item.hint}</p><p><b>Answer:</b> {item.answer}</p><SourcePills ids={item.sourceIds} /></details>)}</div>}

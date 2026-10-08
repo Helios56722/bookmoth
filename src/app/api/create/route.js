@@ -1,7 +1,13 @@
 import OpenAI from "openai";
 import sharp from "sharp";
 import { Buffer } from "node:buffer";
-import { buildEvidenceLockedPack, normalizeLearningPack, validateSources } from "@/lib/bookmoth";
+import {
+  buildEvidenceLockedPack,
+  buildSourceLockedDeepLesson,
+  normalizeLearningPack,
+  validateDeepLessons,
+  validateSources,
+} from "@/lib/bookmoth";
 
 export const runtime = "nodejs";
 
@@ -13,6 +19,9 @@ const packSchema = {
     "overview",
     "sources",
     "concepts",
+    "depthSummary",
+    "deepLessons",
+    "evidenceReview",
     "trailMap",
     "reportSections",
     "flashcards",
@@ -49,6 +58,84 @@ const packSchema = {
           explanation: { type: "string" },
           sourceIds: { type: "array", items: { type: "string" } },
         },
+      },
+    },
+    depthSummary: { type: "string" },
+    deepLessons: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "term",
+          "learningObjective",
+          "directAnswer",
+          "explanation",
+          "steps",
+          "whyItMatters",
+          "example",
+          "commonMistakes",
+          "check",
+          "sourceIds",
+          "evidenceQuotes",
+          "verification",
+        ],
+        properties: {
+          term: { type: "string" },
+          learningObjective: { type: "string" },
+          directAnswer: { type: "string" },
+          explanation: { type: "string" },
+          steps: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["title", "explanation"],
+              properties: {
+                title: { type: "string" },
+                explanation: { type: "string" },
+              },
+            },
+          },
+          whyItMatters: { type: "string" },
+          example: { type: "string" },
+          commonMistakes: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["mistake", "correction"],
+              properties: {
+                mistake: { type: "string" },
+                correction: { type: "string" },
+              },
+            },
+          },
+          check: {
+            type: "object",
+            additionalProperties: false,
+            required: ["question", "hint", "answer"],
+            properties: {
+              question: { type: "string" },
+              hint: { type: "string" },
+              answer: { type: "string" },
+            },
+          },
+          sourceIds: { type: "array", items: { type: "string" } },
+          evidenceQuotes: { type: "array", items: { type: "string" } },
+          verification: { type: "string", enum: ["source-checked", "needs-review"] },
+        },
+      },
+    },
+    evidenceReview: {
+      type: "object",
+      additionalProperties: false,
+      required: ["status", "acceptedLessons", "rejectedLessons", "note"],
+      properties: {
+        status: { type: "string", enum: ["source-checked", "partial", "needs-review"] },
+        acceptedLessons: { type: "integer" },
+        rejectedLessons: { type: "integer" },
+        note: { type: "string" },
       },
     },
     trailMap: {
@@ -165,6 +252,109 @@ const packSchema = {
   },
 };
 
+const deepLessonsResponseSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["lessons"],
+  properties: {
+    lessons: {
+      type: "array",
+      minItems: 1,
+      maxItems: 6,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "term",
+          "learningObjective",
+          "directAnswer",
+          "explanation",
+          "steps",
+          "whyItMatters",
+          "example",
+          "commonMistakes",
+          "check",
+          "sourceIds",
+          "evidenceQuotes",
+          "verification",
+        ],
+        properties: {
+          term: { type: "string" },
+          learningObjective: { type: "string" },
+          directAnswer: { type: "string" },
+          explanation: { type: "string" },
+          steps: {
+            type: "array",
+            minItems: 3,
+            maxItems: 6,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["title", "explanation"],
+              properties: {
+                title: { type: "string" },
+                explanation: { type: "string" },
+              },
+            },
+          },
+          whyItMatters: { type: "string" },
+          example: { type: "string" },
+          commonMistakes: {
+            type: "array",
+            minItems: 2,
+            maxItems: 4,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["mistake", "correction"],
+              properties: {
+                mistake: { type: "string" },
+                correction: { type: "string" },
+              },
+            },
+          },
+          check: {
+            type: "object",
+            additionalProperties: false,
+            required: ["question", "hint", "answer"],
+            properties: {
+              question: { type: "string" },
+              hint: { type: "string" },
+              answer: { type: "string" },
+            },
+          },
+          sourceIds: { type: "array", minItems: 1, items: { type: "string" } },
+          evidenceQuotes: { type: "array", minItems: 1, items: { type: "string" } },
+          verification: { type: "string", enum: ["needs-review"] },
+        },
+      },
+    },
+  },
+};
+
+const evidenceReviewResponseSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["decisions"],
+  properties: {
+    decisions: {
+      type: "array",
+      minItems: 1,
+      maxItems: 6,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["term", "supported", "unsupportedClaims"],
+        properties: {
+          term: { type: "string" },
+          supported: { type: "boolean" },
+          unsupportedClaims: { type: "array", items: { type: "string" } },
+        },
+      },
+    },
+  },
+};
+
 function extractOutputText(response) {
   if (response.output_text) return response.output_text;
   return response.output
@@ -195,6 +385,7 @@ function getProviderConfig() {
   return {
     provider,
     model: process.env.OLLAMA_MODEL || "qwen2.5vl:7b",
+    teachingModel: process.env.OLLAMA_TEACHING_MODEL || "qwen3.5:9b",
     url: (process.env.OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/$/, ""),
     local: true,
   };
@@ -216,6 +407,8 @@ function createPrompt(body, extractedSources = null) {
       "A source citation does not make an unsupported statement acceptable. Every sentence must be justified by the exact source evidence.",
     ] : []),
     "Build an age-neutral learning pack for a student, hobby learner, or skill learner.",
+    "Make deepLessons the main teaching output. Each lesson needs a direct answer, a multi-sentence explanation, 3 to 6 ordered steps, why it matters, a source-supported example, at least 2 common mistakes with corrections, a check question with hint and answer, exact evidence quotes, and source IDs.",
+    "Evidence quotes must be copied verbatim from the supplied material. Set verification to source-checked only when every lesson statement is supported; otherwise set needs-review and explain the gap in evidenceReview.",
     "Every concept, report section, flashcard, practice item, and collage callout must cite one or more source IDs.",
     "Build a Lantern trail: 3 to 7 source-linked glowPoints, only relationships the sources support, blindSpots for missing prerequisites or ambiguity, and a short recallLoop that makes the learner retrieve rather than reread.",
     "Use stable glow point IDs G1, G2, and so on. Every thread must refer to IDs present in glowPoints.",
@@ -301,6 +494,263 @@ async function prepareOllamaImage(dataUrl) {
     .then((buffer) => buffer.toString("base64"));
 }
 
+function evidenceForPrompt(extractedSources = []) {
+  return extractedSources
+    .map((source) => `${source.sourceId}:\n${source.extractedText}`)
+    .join("\n\n")
+    .slice(0, Number(process.env.BOOKMOTH_EVIDENCE_CHAR_LIMIT || 42000));
+}
+
+async function parseOllamaJsonWithRepair(config, rawText, schema, label) {
+  try {
+    return JSON.parse(rawText);
+  } catch (parseError) {
+    console.warn(`Bookmoth repairing malformed ${label} JSON`, parseError);
+    const repairedText = await callOllama(config, {
+      model: config.model,
+      stream: false,
+      think: false,
+      messages: [{
+        role: "user",
+        content: [
+          `Repair the malformed ${label} JSON below so it is valid and matches the required schema.`,
+          "Preserve the existing wording and values. Fix syntax only. Do not add, infer, or remove subject-matter claims. Return JSON only.",
+          rawText,
+        ].join("\n\n"),
+      }],
+      format: schema,
+      options: {
+        temperature: 0,
+        num_ctx: Number(process.env.OLLAMA_TEACHING_NUM_CTX || 32768),
+        num_predict: Number(process.env.OLLAMA_TEACHING_NUM_PREDICT || 6144),
+      },
+      keep_alive: process.env.OLLAMA_KEEP_ALIVE || "5m",
+    });
+    return JSON.parse(repairedText);
+  }
+}
+
+async function reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons) {
+  return Promise.all(lessons.map(async (lesson) => {
+    const reviewPrompt = [
+      "You are Bookmoth's strict evidence reviewer. Review the single lesson below.",
+      "The lesson passes only when every subject-matter statement can be derived from the complete cited source without outside knowledge.",
+      "Allow faithful paraphrases, ordinary synonyms, and plain-language combinations of cited statements. Do not require every lesson sentence to be verbatim; only evidenceQuotes must be verbatim.",
+      "These teaching transformations are supported when they introduce no new subject fact: read/choose/compare/observe/recall/check steps; a common mistake that negates or reverses a cited relationship; a question answered by the evidence; a hypothetical use of the exact cited relationship; and a statement that learning or comparing the cited ideas helps meet the stated objective.",
+      "A sentence copied verbatim from the source is supported, including a broader source statement used in whyItMatters. Ignore the draft verification flag. Do not reject a lesson merely because it reorganizes cited facts into teaching steps.",
+      "Reject any new cause, mechanism, purpose, condition, direction, sequence, number, location, object, or domain fact, even when it is commonly known.",
+      "For example, if a source says only 'needs more light', then 'needs more light to achieve proper exposure' is unsupported. If a source says only 'exposure time', then naming a sensor or explaining what is exposed is unsupported.",
+      "Reject silently repaired uncertain wording and any evidence quote that is not verbatim.",
+      `Return JSON only as {"decisions":[{"term":"${String(lesson?.term || "Lesson").replaceAll('"', "'")}","supported":true|false,"unsupportedClaims":["exact unsupported claim"]}]}. Return exactly one decision and do not rewrite the lesson.`,
+      `SOURCE EVIDENCE:\n${evidence}`,
+      `LESSON DRAFT:\n${JSON.stringify(lesson)}`,
+    ].join("\n\n");
+    const reviewText = await callOllama(teachingConfig, {
+      model: teachingConfig.model,
+      stream: false,
+      think: false,
+      messages: [{ role: "user", content: reviewPrompt }],
+      format: evidenceReviewResponseSchema,
+      options: {
+        temperature: 0,
+        num_ctx: Number(process.env.OLLAMA_TEACHING_NUM_CTX || 32768),
+        num_predict: Number(process.env.OLLAMA_REVIEW_NUM_PREDICT || 2048),
+      },
+      keep_alive: process.env.OLLAMA_KEEP_ALIVE || "5m",
+    });
+    const review = await parseOllamaJsonWithRepair(
+      teachingConfig,
+      reviewText,
+      evidenceReviewResponseSchema,
+      "evidence review",
+    );
+    const term = String(lesson?.term || "").trim().toLowerCase();
+    const decisions = Array.isArray(review.decisions) ? review.decisions : [];
+    return decisions.find((decision) => String(decision?.term || "").trim().toLowerCase() === term)
+      || {
+        term: lesson?.term || "Lesson",
+        supported: false,
+        unsupportedClaims: ["The evidence reviewer did not return a matching decision."],
+      };
+  }));
+}
+
+async function reviseRejectedDeepLessonsWithOllama(
+  teachingConfig,
+  evidence,
+  rejectedLessons,
+  reviewFeedback,
+) {
+  const revisionPrompt = [
+    "You are Bookmoth's source-lock editor.",
+    "Revise each rejected lesson so every subject-matter claim is fully supported by the supplied evidence. Return JSON only as {\"lessons\":[...]}",
+    "Keep each lesson term exactly unchanged and preserve the detailed teaching structure: learningObjective, directAnswer, explanation, 3 to 6 steps, whyItMatters, example, at least 2 commonMistakes, check, sourceIds, evidenceQuotes, and verification.",
+    "Remove or rewrite every unsupported claim identified by the reviewer. Use the source's own wording when a paraphrase might add a purpose, mechanism, condition, object, sequence, or relationship.",
+    "The deterministic vocabulary check lists subject words that do not occur in the source. Remove those words or replace the sentence with direct source wording. Generic study language is fine, but every subject-specific word must appear in the source evidence.",
+    "You may explain how to study, compare, recall, or verify a statement. You may not supply missing subject knowledge. Do not make a lesson sound more complete by adding facts that are absent from the source.",
+    "Every evidenceQuotes entry must be copied verbatim from a cited source. Set verification to needs-review.",
+    `SOURCE EVIDENCE:\n${evidence}`,
+    `REVIEW FEEDBACK:\n${JSON.stringify(reviewFeedback)}`,
+    `REJECTED LESSONS:\n${JSON.stringify(rejectedLessons)}`,
+  ].join("\n\n");
+  const revisionText = await callOllama(teachingConfig, {
+    model: teachingConfig.model,
+    stream: false,
+    think: false,
+    messages: [{ role: "user", content: revisionPrompt }],
+    format: deepLessonsResponseSchema,
+    options: {
+      temperature: 0,
+      num_ctx: Number(process.env.OLLAMA_TEACHING_NUM_CTX || 32768),
+      num_predict: Number(process.env.OLLAMA_TEACHING_NUM_PREDICT || 6144),
+    },
+    keep_alive: process.env.OLLAMA_KEEP_ALIVE || "5m",
+  });
+  const revision = await parseOllamaJsonWithRepair(
+    teachingConfig,
+    revisionText,
+    deepLessonsResponseSchema,
+    "source-lock revision",
+  );
+  return Array.isArray(revision.lessons) ? revision.lessons : [];
+}
+
+async function createDeepLessonsWithOllama(config, body, extractedSources, fallbackPack) {
+  const teachingConfig = { ...config, model: config.teachingModel || config.model };
+  const lessonCount = Math.min(Math.max(fallbackPack.concepts.length, 1), 4);
+  const evidence = evidenceForPrompt(extractedSources);
+  const generationPrompt = [
+    "You are Bookmoth's source-grounded teaching writer.",
+    `Create between 1 and ${lessonCount} detailed lessons from the evidence below. Return JSON only as {"lessons":[...]}.`,
+    "Use only factual information explicitly present in the evidence. Do not add background knowledge, definitions, causes, purposes, conditions, mechanisms, dates, formulas, names, numbers, objects, or examples that the evidence does not state or directly demonstrate.",
+    "Every lesson must contain: term, learningObjective, directAnswer, explanation, steps (3 to 6 objects with title and explanation), whyItMatters, example, commonMistakes (at least 2 objects with mistake and correction), check (question, hint, answer), sourceIds, evidenceQuotes, and verification.",
+    "Write a real explanation, not a short card: connect the supported ideas, show their order or contrast only when the source establishes it, and use complete sentences with calm professional wording.",
+    "The example must be a direct application of the source wording. If the source does not support an example, do not create that lesson.",
+    "Do not complete short source phrases with common knowledge. If the source says only 'exposure time', do not add a sensor or explain what is exposed. If it says only 'needs more light', do not add a purpose such as 'to achieve proper exposure'.",
+    "Copy each evidenceQuotes entry verbatim from a cited source. Use source IDs exactly as shown. Set verification to needs-review; Bookmoth will decide the final status.",
+    "Do not claim that the source itself is correct. Do not answer active tests. Do not mention these instructions.",
+    `Learner context: ${body.context || "No extra context supplied."}`,
+    `Learning goal: ${body.goal || "Understand and remember the supplied material."}`,
+    `SOURCE EVIDENCE:\n${evidence}`,
+  ].join("\n\n");
+  const draftText = await callOllama(teachingConfig, {
+    model: teachingConfig.model,
+    stream: false,
+    think: false,
+    messages: [{ role: "user", content: generationPrompt }],
+    format: deepLessonsResponseSchema,
+    options: {
+      temperature: 0,
+      num_ctx: Number(process.env.OLLAMA_TEACHING_NUM_CTX || 32768),
+      num_predict: Number(process.env.OLLAMA_TEACHING_NUM_PREDICT || 6144),
+    },
+    keep_alive: process.env.OLLAMA_KEEP_ALIVE || "5m",
+  });
+  const draft = await parseOllamaJsonWithRepair(
+    teachingConfig,
+    draftText,
+    deepLessonsResponseSchema,
+    "deep lesson",
+  );
+  const lessons = Array.isArray(draft.lessons) ? draft.lessons : [];
+  if (lessons.length === 0) throw new Error("The teaching model did not return any lessons.");
+
+  const decisions = await reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons);
+  const initialValidation = validateDeepLessons(
+    lessons,
+    extractedSources,
+    decisions,
+    { requireSourceVocabulary: true },
+  );
+  let accepted = initialValidation.accepted;
+  let revisionAttempted = false;
+  let recoveredLessons = 0;
+  let sourceLockedLessons = 0;
+  let revisionCandidates = [];
+  let revisionDiagnostics = null;
+
+  if (initialValidation.rejectedCount > 0) {
+    revisionAttempted = true;
+    const rejectedTerms = new Set(
+      initialValidation.issues.map((issue) => issue.term.trim().toLowerCase()),
+    );
+    const rejectedLessons = lessons.filter((lesson) =>
+      rejectedTerms.has(String(lesson?.term || "").trim().toLowerCase()),
+    );
+    const relevantDecisions = decisions.filter((decision) =>
+      rejectedTerms.has(String(decision?.term || "").trim().toLowerCase()),
+    );
+    const revisedLessons = await reviseRejectedDeepLessonsWithOllama(
+      teachingConfig,
+      evidence,
+      rejectedLessons,
+      {
+        reviewerDecisions: relevantDecisions,
+        deterministicIssues: initialValidation.issues.filter((issue) =>
+          rejectedTerms.has(String(issue?.term || "").trim().toLowerCase()),
+        ),
+      },
+    );
+    revisionCandidates = revisedLessons;
+    if (revisedLessons.length > 0) {
+      const revisedDecisions = await reviewDeepLessonsWithOllama(
+        teachingConfig,
+        evidence,
+        revisedLessons,
+      );
+      const revisedValidation = validateDeepLessons(
+        revisedLessons,
+        extractedSources,
+        revisedDecisions,
+        { requireSourceVocabulary: true },
+      );
+      revisionDiagnostics = {
+        issues: revisedValidation.issues,
+        decisions: revisedDecisions,
+      };
+      recoveredLessons = revisedValidation.accepted.length;
+      accepted = [...accepted, ...revisedValidation.accepted];
+    }
+  }
+
+  const acceptedTerms = new Set(
+    accepted.map((lesson) => String(lesson.term || "").trim().toLowerCase()),
+  );
+  const recoveryCandidates = [...revisionCandidates, ...lessons].filter((lesson, index, all) => {
+    const term = String(lesson?.term || "").trim().toLowerCase();
+    return term
+      && !acceptedTerms.has(term)
+      && all.findIndex((candidate) => String(candidate?.term || "").trim().toLowerCase() === term) === index;
+  });
+  const sourceLockedCandidates = recoveryCandidates
+    .map((lesson) => buildSourceLockedDeepLesson(lesson, extractedSources))
+    .filter(Boolean);
+  const sourceLockedValidation = validateDeepLessons(
+    sourceLockedCandidates,
+    extractedSources,
+    null,
+    { requireSourceVocabulary: true },
+  );
+  sourceLockedLessons = sourceLockedValidation.accepted.length;
+  accepted = [...accepted, ...sourceLockedValidation.accepted].slice(0, lessons.length);
+
+  if (accepted.length === 0) {
+    throw new Error(`No generated lesson passed the evidence gate: ${JSON.stringify({
+      initial: { issues: initialValidation.issues, decisions },
+      revision: revisionDiagnostics,
+    })}`);
+  }
+
+  return {
+    lessons: accepted,
+    rejectedCount: Math.max(lessons.length - accepted.length, 0),
+    revisionAttempted,
+    recoveredLessons,
+    sourceLockedLessons,
+    teachingModel: teachingConfig.model,
+  };
+}
+
 async function createWithOllama(config, body) {
   const common = {
     model: config.model,
@@ -360,7 +810,44 @@ async function createWithOllama(config, body) {
       });
     }
   }
-  return buildEvidenceLockedPack(extractedSources);
+  const pack = buildEvidenceLockedPack(
+    extractedSources,
+    body.goal || "Understand and remember the supplied material.",
+  );
+  try {
+    const teaching = await createDeepLessonsWithOllama(config, body, extractedSources, pack);
+    pack.deepLessons = teaching.lessons;
+    pack.depthSummary = `${teaching.lessons.length} detailed lesson${teaching.lessons.length === 1 ? "" : "s"} passed Bookmoth's source-ID, verbatim-quote, structure, and separate support-review gates.`;
+    pack.evidenceReview = {
+      status: teaching.rejectedCount > 0 ? "partial" : "source-checked",
+      acceptedLessons: teaching.lessons.length,
+      rejectedLessons: teaching.rejectedCount,
+      note: teaching.rejectedCount > 0
+        ? `${teaching.rejectedCount} draft lesson${teaching.rejectedCount === 1 ? " was" : "s were"} removed because the evidence check did not pass.`
+        : teaching.sourceLockedLessons > 0
+          ? `${teaching.sourceLockedLessons} lesson${teaching.sourceLockedLessons === 1 ? " was" : "s were"} rebuilt from exact evidence after expanded wording failed the source gate. Every factual answer is tied to verbatim source statements. This verifies grounding in the supplied sources, not the independent accuracy of those sources.`
+          : teaching.revisionAttempted
+            ? `${teaching.recoveredLessons} lesson${teaching.recoveredLessons === 1 ? " was" : "s were"} corrected by the source-lock editor, then passed a second support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources.`
+          : `The teaching draft from ${teaching.teachingModel} passed a separate support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources.`,
+    };
+    pack.cautions = [
+      ...pack.cautions,
+      "Bookmoth checks whether explanations are grounded in the supplied material. It cannot prove that the supplied material itself is correct.",
+    ];
+  } catch (error) {
+    console.warn("Bookmoth deep teaching fell back to exact evidence", error);
+    pack.evidenceReview = {
+      status: "partial",
+      acceptedLessons: pack.deepLessons.length,
+      rejectedLessons: 0,
+      note: "The detailed teaching draft did not pass the full evidence gate, so Bookmoth displayed exact source-locked lessons instead of risking unsupported information.",
+    };
+    pack.cautions = [
+      ...pack.cautions,
+      "Detailed teaching was limited to exact source wording because the expanded draft did not pass every evidence check.",
+    ];
+  }
+  return pack;
 }
 
 export async function GET() {
@@ -376,23 +863,36 @@ export async function GET() {
       });
     }
     try {
-      const response = await fetch(`${config.url}/api/show`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: config.model }),
-        signal: globalThis.AbortSignal.timeout(5000),
-      });
+      const [visionResponse, teachingResponse] = await Promise.all([
+        fetch(`${config.url}/api/show`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: config.model }),
+          signal: globalThis.AbortSignal.timeout(5000),
+        }),
+        fetch(`${config.url}/api/show`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: config.teachingModel }),
+          signal: globalThis.AbortSignal.timeout(5000),
+        }),
+      ]);
+      const ready = visionResponse.ok && teachingResponse.ok;
       return Response.json({
         provider: "ollama",
         model: config.model,
+        teachingModel: config.teachingModel,
         local: true,
-        ready: response.ok,
-        detail: response.ok ? "Local AI is ready." : `Install ${config.model} in Ollama.`,
+        ready,
+        detail: ready
+          ? "Local reading and teaching models are ready."
+          : `Install ${!visionResponse.ok ? config.model : config.teachingModel} in Ollama.`,
       });
     } catch {
       return Response.json({
         provider: "ollama",
         model: config.model,
+        teachingModel: config.teachingModel,
         local: true,
         ready: false,
         detail: "Start Ollama, then reopen Bookmoth.",
@@ -422,9 +922,43 @@ export async function POST(request) {
     const rawPack = config.provider === "openai"
       ? await createWithOpenAI(config, body, prompt)
       : await createWithOllama(config, body);
+    let finalPack = normalizeLearningPack(rawPack);
+    if (config.provider === "openai") {
+      const cloudValidation = validateDeepLessons(
+        finalPack.deepLessons,
+        finalPack.sources,
+        null,
+        { requireSourceVocabulary: true },
+      );
+      if (cloudValidation.accepted.length > 0) {
+        finalPack.deepLessons = cloudValidation.accepted;
+        finalPack.evidenceReview = {
+          status: cloudValidation.rejectedCount > 0 ? "partial" : "source-checked",
+          acceptedLessons: cloudValidation.accepted.length,
+          rejectedLessons: cloudValidation.rejectedCount,
+          note: "Bookmoth verified the source IDs, required teaching structure, and exact evidence quotes. Check the supplied material before relying on it.",
+        };
+      } else {
+        finalPack = buildEvidenceLockedPack(
+          finalPack.sources,
+          body.goal || "Understand and remember the supplied material.",
+        );
+        finalPack.evidenceReview = {
+          status: "partial",
+          acceptedLessons: finalPack.deepLessons.length,
+          rejectedLessons: cloudValidation.rejectedCount,
+          note: "The expanded cloud draft failed the deterministic evidence gate, so Bookmoth displayed exact source-locked lessons.",
+        };
+      }
+    }
     return Response.json({
-      pack: normalizeLearningPack(rawPack),
-      provider: { name: config.provider, model: config.model, local: config.local },
+      pack: normalizeLearningPack(finalPack),
+      provider: {
+        name: config.provider,
+        model: config.model,
+        teachingModel: config.teachingModel || config.model,
+        local: config.local,
+      },
     });
   } catch (error) {
     console.error("Bookmoth learning pack error", error);

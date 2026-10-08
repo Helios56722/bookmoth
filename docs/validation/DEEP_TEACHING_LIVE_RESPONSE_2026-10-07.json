@@ -1,0 +1,853 @@
+{
+  "pack": {
+    "title": "PHOTOGRAPHY · MANUAL CONTROL: evidence-locked study guide",
+    "overview": "This guide organizes 19 source statements from 1 image. Answers preserve the extracted wording so each statement can be checked against its source.",
+    "sources": [
+      {
+        "sourceId": "S1",
+        "extractedText": "PHOTOGRAPHY · MANUAL CONTROL\nMastering exposure\nShape brightness, motion, and depth with three connected controls.\n\nAperture\nLens opening\nWider: more light, shallower depth.\nNarrower: less light, deeper depth.\n\nShutter speed\nExposure time\nFaster: less light, freezes motion.\nSlower: more light, shows motion blur.\n\nISO\nSignal amplification\nHigher: brighter, more visible noise.\nLower: less noise, needs more light.\n\nOne scene. Three decisions.\nChoose the look first, then balance the remaining controls.\n\nEXPOSURE THINKING Pick the creative priority\nMeter the scene\nBalance the other controls",
+        "confidence": "high",
+        "unclearText": []
+      }
+    ],
+    "concepts": [
+      {
+        "term": "Mastering exposure",
+        "explanation": "Mastering exposure",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Source point 2",
+        "explanation": "Shape brightness, motion, and depth with three connected controls.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Aperture",
+        "explanation": "Aperture",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Lens opening",
+        "explanation": "Lens opening",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Wider",
+        "explanation": "Wider: more light, shallower depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Narrower",
+        "explanation": "Narrower: less light, deeper depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Shutter speed",
+        "explanation": "Shutter speed",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Exposure time",
+        "explanation": "Exposure time",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Faster",
+        "explanation": "Faster: less light, freezes motion.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Slower",
+        "explanation": "Slower: more light, shows motion blur.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "ISO",
+        "explanation": "ISO",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Signal amplification",
+        "explanation": "Signal amplification",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Higher",
+        "explanation": "Higher: brighter, more visible noise.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Lower",
+        "explanation": "Lower: less noise, needs more light.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "One scene. Three decisions",
+        "explanation": "One scene. Three decisions.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Source point 16",
+        "explanation": "Choose the look first, then balance the remaining controls.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Source point 17",
+        "explanation": "EXPOSURE THINKING Pick the creative priority",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Meter the scene",
+        "explanation": "Meter the scene",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "term": "Balance the other controls",
+        "explanation": "Balance the other controls",
+        "sourceIds": [
+          "S1"
+        ]
+      }
+    ],
+    "depthSummary": "3 detailed lessons passed Bookmoth's source-ID, verbatim-quote, structure, and separate support-review gates.",
+    "deepLessons": [
+      {
+        "term": "Aperture",
+        "learningObjective": "Explain the supplied source statements about Aperture without adding outside information.",
+        "directAnswer": "Wider: more light, shallower depth. Narrower: less light, deeper depth.",
+        "explanation": "The source gives 2 evidence statements for this lesson. It states: “Wider: more light, shallower depth.” It also states: “Narrower: less light, deeper depth.” These statements are the supported answer. Keep their wording in view while you compare them, and do not add a cause, purpose, or mechanism unless another source states it.",
+        "steps": [
+          {
+            "title": "Locate the evidence",
+            "explanation": "Open S1 and find the quoted statements before answering."
+          },
+          {
+            "title": "Read statement 1",
+            "explanation": "Read and say the exact source wording: “Wider: more light, shallower depth.”"
+          },
+          {
+            "title": "Read statement 2",
+            "explanation": "Read and say the exact source wording: “Narrower: less light, deeper depth.”"
+          },
+          {
+            "title": "Explain the comparison",
+            "explanation": "Describe only what the quoted statements say. Keep any extra cause, purpose, or detail out of the answer."
+          },
+          {
+            "title": "Verify the answer",
+            "explanation": "Compare your answer with each quote and correct any changed, reversed, or added information."
+          }
+        ],
+        "whyItMatters": "This method keeps the lesson relevant to the supplied material and makes every subject statement easy to verify.",
+        "example": "Hide the evidence, answer “What does the source state about Aperture?”, then reopen the source and check every word.",
+        "commonMistakes": [
+          {
+            "mistake": "Adding a likely cause, purpose, example, or detail that the source does not state.",
+            "correction": "Use the supported answer only: Wider: more light, shallower depth. Narrower: less light, deeper depth."
+          },
+          {
+            "mistake": "Mixing, changing, or reversing the evidence statements.",
+            "correction": "Return to S1 and read each quote in its original wording."
+          }
+        ],
+        "check": {
+          "question": "What does the supplied source state about Aperture?",
+          "hint": "Recall the 2 quoted statements before reopening the evidence.",
+          "answer": "Wider: more light, shallower depth. Narrower: less light, deeper depth."
+        },
+        "sourceIds": [
+          "S1"
+        ],
+        "evidenceQuotes": [
+          "Wider: more light, shallower depth.",
+          "Narrower: less light, deeper depth."
+        ],
+        "verification": "source-checked"
+      },
+      {
+        "term": "Shutter Speed",
+        "learningObjective": "Explain the supplied source statements about Shutter Speed without adding outside information.",
+        "directAnswer": "Faster: less light, freezes motion. Slower: more light, shows motion blur.",
+        "explanation": "The source gives 2 evidence statements for this lesson. It states: “Faster: less light, freezes motion.” It also states: “Slower: more light, shows motion blur.” These statements are the supported answer. Keep their wording in view while you compare them, and do not add a cause, purpose, or mechanism unless another source states it.",
+        "steps": [
+          {
+            "title": "Locate the evidence",
+            "explanation": "Open S1 and find the quoted statements before answering."
+          },
+          {
+            "title": "Read statement 1",
+            "explanation": "Read and say the exact source wording: “Faster: less light, freezes motion.”"
+          },
+          {
+            "title": "Read statement 2",
+            "explanation": "Read and say the exact source wording: “Slower: more light, shows motion blur.”"
+          },
+          {
+            "title": "Explain the comparison",
+            "explanation": "Describe only what the quoted statements say. Keep any extra cause, purpose, or detail out of the answer."
+          },
+          {
+            "title": "Verify the answer",
+            "explanation": "Compare your answer with each quote and correct any changed, reversed, or added information."
+          }
+        ],
+        "whyItMatters": "This method keeps the lesson relevant to the supplied material and makes every subject statement easy to verify.",
+        "example": "Hide the evidence, answer “What does the source state about Shutter Speed?”, then reopen the source and check every word.",
+        "commonMistakes": [
+          {
+            "mistake": "Adding a likely cause, purpose, example, or detail that the source does not state.",
+            "correction": "Use the supported answer only: Faster: less light, freezes motion. Slower: more light, shows motion blur."
+          },
+          {
+            "mistake": "Mixing, changing, or reversing the evidence statements.",
+            "correction": "Return to S1 and read each quote in its original wording."
+          }
+        ],
+        "check": {
+          "question": "What does the supplied source state about Shutter Speed?",
+          "hint": "Recall the 2 quoted statements before reopening the evidence.",
+          "answer": "Faster: less light, freezes motion. Slower: more light, shows motion blur."
+        },
+        "sourceIds": [
+          "S1"
+        ],
+        "evidenceQuotes": [
+          "Faster: less light, freezes motion.",
+          "Slower: more light, shows motion blur."
+        ],
+        "verification": "source-checked"
+      },
+      {
+        "term": "ISO",
+        "learningObjective": "Explain the supplied source statements about ISO without adding outside information.",
+        "directAnswer": "Higher: brighter, more visible noise. Lower: less noise, needs more light.",
+        "explanation": "The source gives 2 evidence statements for this lesson. It states: “Higher: brighter, more visible noise.” It also states: “Lower: less noise, needs more light.” These statements are the supported answer. Keep their wording in view while you compare them, and do not add a cause, purpose, or mechanism unless another source states it.",
+        "steps": [
+          {
+            "title": "Locate the evidence",
+            "explanation": "Open S1 and find the quoted statements before answering."
+          },
+          {
+            "title": "Read statement 1",
+            "explanation": "Read and say the exact source wording: “Higher: brighter, more visible noise.”"
+          },
+          {
+            "title": "Read statement 2",
+            "explanation": "Read and say the exact source wording: “Lower: less noise, needs more light.”"
+          },
+          {
+            "title": "Explain the comparison",
+            "explanation": "Describe only what the quoted statements say. Keep any extra cause, purpose, or detail out of the answer."
+          },
+          {
+            "title": "Verify the answer",
+            "explanation": "Compare your answer with each quote and correct any changed, reversed, or added information."
+          }
+        ],
+        "whyItMatters": "This method keeps the lesson relevant to the supplied material and makes every subject statement easy to verify.",
+        "example": "Hide the evidence, answer “What does the source state about ISO?”, then reopen the source and check every word.",
+        "commonMistakes": [
+          {
+            "mistake": "Adding a likely cause, purpose, example, or detail that the source does not state.",
+            "correction": "Use the supported answer only: Higher: brighter, more visible noise. Lower: less noise, needs more light."
+          },
+          {
+            "mistake": "Mixing, changing, or reversing the evidence statements.",
+            "correction": "Return to S1 and read each quote in its original wording."
+          }
+        ],
+        "check": {
+          "question": "What does the supplied source state about ISO?",
+          "hint": "Recall the 2 quoted statements before reopening the evidence.",
+          "answer": "Higher: brighter, more visible noise. Lower: less noise, needs more light."
+        },
+        "sourceIds": [
+          "S1"
+        ],
+        "evidenceQuotes": [
+          "Higher: brighter, more visible noise.",
+          "Lower: less noise, needs more light."
+        ],
+        "verification": "source-checked"
+      }
+    ],
+    "evidenceReview": {
+      "status": "source-checked",
+      "acceptedLessons": 3,
+      "rejectedLessons": 0,
+      "note": "3 lessons were rebuilt from exact evidence after expanded wording failed the source gate. Every factual answer is tied to verbatim source statements. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+    },
+    "trailMap": {
+      "glowPoints": [
+        {
+          "id": "G1",
+          "label": "Mastering exposure",
+          "whyItMatters": "Mastering exposure",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "id": "G2",
+          "label": "Source point 2",
+          "whyItMatters": "Shape brightness, motion, and depth with three connected controls.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "id": "G3",
+          "label": "Aperture",
+          "whyItMatters": "Aperture",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "id": "G4",
+          "label": "Lens opening",
+          "whyItMatters": "Lens opening",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "id": "G5",
+          "label": "Wider",
+          "whyItMatters": "Wider: more light, shallower depth.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "id": "G6",
+          "label": "Narrower",
+          "whyItMatters": "Narrower: less light, deeper depth.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "id": "G7",
+          "label": "Shutter speed",
+          "whyItMatters": "Shutter speed",
+          "sourceIds": [
+            "S1"
+          ]
+        }
+      ],
+      "threads": [],
+      "blindSpots": [
+        {
+          "question": "Which source statements are directly connected, and what is the relationship?",
+          "reason": "The source text lists statements, but their order alone does not prove a sequence or relationship.",
+          "sourceIds": [
+            "S1"
+          ]
+        }
+      ],
+      "recallLoop": [
+        "Cover the answers and recall each source statement in your own words.",
+        "Check every answer against its cited source, then correct anything you missed.",
+        "Repeat the hardest cards tomorrow before rereading the source."
+      ]
+    },
+    "reportSections": [
+      {
+        "heading": "Mastering exposure",
+        "body": "Mastering exposure",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Source point 2",
+        "body": "Shape brightness, motion, and depth with three connected controls.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Aperture",
+        "body": "Aperture",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Lens opening",
+        "body": "Lens opening",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Wider",
+        "body": "Wider: more light, shallower depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Narrower",
+        "body": "Narrower: less light, deeper depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Shutter speed",
+        "body": "Shutter speed",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Exposure time",
+        "body": "Exposure time",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Faster",
+        "body": "Faster: less light, freezes motion.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Slower",
+        "body": "Slower: more light, shows motion blur.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "ISO",
+        "body": "ISO",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Signal amplification",
+        "body": "Signal amplification",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Higher",
+        "body": "Higher: brighter, more visible noise.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Lower",
+        "body": "Lower: less noise, needs more light.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "One scene. Three decisions",
+        "body": "One scene. Three decisions.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Source point 16",
+        "body": "Choose the look first, then balance the remaining controls.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Source point 17",
+        "body": "EXPOSURE THINKING Pick the creative priority",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Meter the scene",
+        "body": "Meter the scene",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "heading": "Balance the other controls",
+        "body": "Balance the other controls",
+        "sourceIds": [
+          "S1"
+        ]
+      }
+    ],
+    "flashcards": [
+      {
+        "front": "What does the source state about “Mastering exposure”?",
+        "back": "Mastering exposure",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Source point 2”?",
+        "back": "Shape brightness, motion, and depth with three connected controls.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Aperture”?",
+        "back": "Aperture",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Lens opening”?",
+        "back": "Lens opening",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Wider”?",
+        "back": "Wider: more light, shallower depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Narrower”?",
+        "back": "Narrower: less light, deeper depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Shutter speed”?",
+        "back": "Shutter speed",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Exposure time”?",
+        "back": "Exposure time",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Faster”?",
+        "back": "Faster: less light, freezes motion.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Slower”?",
+        "back": "Slower: more light, shows motion blur.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “ISO”?",
+        "back": "ISO",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Signal amplification”?",
+        "back": "Signal amplification",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Higher”?",
+        "back": "Higher: brighter, more visible noise.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Lower”?",
+        "back": "Lower: less noise, needs more light.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “One scene. Three decisions”?",
+        "back": "One scene. Three decisions.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Source point 16”?",
+        "back": "Choose the look first, then balance the remaining controls.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Source point 17”?",
+        "back": "EXPOSURE THINKING Pick the creative priority",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Meter the scene”?",
+        "back": "Meter the scene",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "front": "What does the source state about “Balance the other controls”?",
+        "back": "Balance the other controls",
+        "sourceIds": [
+          "S1"
+        ]
+      }
+    ],
+    "practice": [
+      {
+        "question": "Without looking, write the statement associated with “Mastering exposure.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Mastering exposure",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Source point 2.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Shape brightness, motion, and depth with three connected controls.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Aperture.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Aperture",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Lens opening.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Lens opening",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Wider.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Wider: more light, shallower depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Narrower.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Narrower: less light, deeper depth.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Shutter speed.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Shutter speed",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Exposure time.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Exposure time",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Faster.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Faster: less light, freezes motion.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Slower.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Slower: more light, shows motion blur.",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “ISO.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "ISO",
+        "sourceIds": [
+          "S1"
+        ]
+      },
+      {
+        "question": "Without looking, write the statement associated with “Signal amplification.”",
+        "hint": "Check S1 only after attempting an answer.",
+        "answer": "Signal amplification",
+        "sourceIds": [
+          "S1"
+        ]
+      }
+    ],
+    "collage": {
+      "title": "PHOTOGRAPHY · MANUAL CONTROL",
+      "caption": "A compact board made from the exact statements extracted from your images.",
+      "callouts": [
+        {
+          "text": "Mastering exposure",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Shape brightness, motion, and depth with three connected controls.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Aperture",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Lens opening",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Wider: more light, shallower depth.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Narrower: less light, deeper depth.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Shutter speed",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Exposure time",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Faster: less light, freezes motion.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Slower: more light, shows motion blur.",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "ISO",
+          "sourceIds": [
+            "S1"
+          ]
+        },
+        {
+          "text": "Signal amplification",
+          "sourceIds": [
+            "S1"
+          ]
+        }
+      ]
+    },
+    "reviewPlan": [
+      "Review the extracted text beside the original images and correct any OCR mistakes.",
+      "Complete the practice prompts without looking at the answers.",
+      "Return tomorrow and retry only the cards you missed."
+    ],
+    "cautions": [
+      "Local evidence lock keeps factual answers in the extracted source wording. OCR can still be wrong, so compare each cited source with the original image.",
+      "Bookmoth checks whether explanations are grounded in the supplied material. It cannot prove that the supplied material itself is correct."
+    ]
+  },
+  "provider": {
+    "name": "ollama",
+    "model": "qwen2.5vl:7b",
+    "teachingModel": "qwen3.5:9b",
+    "local": true
+  }
+}

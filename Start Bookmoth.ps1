@@ -63,9 +63,14 @@ if ($provider -eq "ollama") {
 
     $model = Get-LocalSetting "OLLAMA_MODEL"
     if (-not $model) { $model = "qwen2.5vl:7b" }
+    $teachingModel = Get-LocalSetting "OLLAMA_TEACHING_MODEL"
+    if (-not $teachingModel) { $teachingModel = "qwen3.5:9b" }
     $tags = Invoke-RestMethod -Uri "$ollamaUrl/api/tags" -Method Get -TimeoutSec 5
     if ($model -notin @($tags.models.name)) {
         throw "The local vision model '$model' is not installed. Run: ollama pull $model"
+    }
+    if ($teachingModel -notin @($tags.models.name)) {
+        throw "The local teaching model '$teachingModel' is not installed. Run: ollama pull $teachingModel"
     }
 }
 

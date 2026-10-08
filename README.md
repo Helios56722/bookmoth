@@ -9,7 +9,9 @@ The project is built for students, hobby learners, and people developing a new s
 - Upload up to eight PNG, JPG, or WebP screenshots.
 - Record the topic, learning goal, and original source link.
 - Generate a structured pack with a study guide, a source-linked Lantern trail, a report, flashcards, practice questions, and collage notes.
+- Study with layered lessons containing a direct answer, full explanation, ordered breakdown, why the idea matters, a source-supported example, common mistakes, and a worked understanding check.
 - Trace generated items back to source IDs.
+- See whether each detailed lesson passed the source-ID, exact-quote, structure, and separate support-review gates.
 - Review extracted text, confidence, unclear fragments, and cautions.
 - Export the pack as Markdown or JSON.
 - Export a visual source collage as PNG.
@@ -31,10 +33,10 @@ The app also includes a complete sample that works without a model and a web-app
 
 ### Free local mode
 
-The default provider is the installed Ollama vision model `qwen2.5vl:7b`. No API key is required, and screenshot analysis stays on the local PC.
+Free local mode uses two installed Ollama models: `qwen2.5vl:7b` reads the images, and `qwen3.5:9b` drafts and reviews the detailed teaching. No API key is required, and the work stays on the local PC.
 
 1. Install Node.js 24 and [Ollama](https://ollama.com/).
-2. Install the vision model once with `ollama pull qwen2.5vl:7b` if it is not already present.
+2. Install the local models once with `ollama pull qwen2.5vl:7b` and `ollama pull qwen3.5:9b` if they are not already present.
 3. Run:
 
 ```bash
@@ -59,7 +61,9 @@ See the official [OpenAI authentication guidance](https://developers.openai.com/
 
 Both provider calls live in `src/app/api/create/route.js` and return the same learning-pack schema.
 
-Local mode uses the vision model to transcribe the images, then applies an evidence lock: factual answers reuse the extracted source lines instead of asking the model to fill gaps from memory. It intentionally leaves relationships unconnected when the source does not state them. OpenAI mode remains the more interpretive optional route and should still be checked against the cited images.
+Local mode separates reading, teaching, and verification. The vision model transcribes each image. The teaching model drafts layered lessons from that extracted evidence, then performs a separate support review. Bookmoth rejects unknown source IDs, evidence quotes that do not appear in the cited OCR text, incomplete lesson structures, and subject vocabulary that is absent from the source. Rejected lessons receive one constrained correction pass. If expanded wording still fails, Bookmoth keeps the useful lesson grouping but rebuilds every factual answer from exact evidence instead of filling the gap from memory.
+
+These checks verify that the displayed teaching is grounded in the supplied material. They do not prove that the material itself is correct. Learners should compare OCR with the original image and add an authoritative source when the uploaded material is incomplete or questionable. OpenAI mode remains optional and should also be checked against the cited images.
 
 ## Privacy boundary
 
@@ -90,6 +94,8 @@ The repository's automated workflow runs the same test, lint, and production-bui
 Verified locally on 2026-10-07 with Ollama `qwen2.5vl:7b`: a slightly rotated synthetic phone photo with mild blur and glare completed through the production API in 8.0 seconds. All five expected water-cycle terms were extracted, the result contained 12 source-linked concepts, and automated checks found zero invalid citations. The same fixture also completed through the browser interface. Seven unit tests, ESLint, the optimized Next.js build, desktop browser review, 390 × 844 responsive review, text-overflow checks, and the no-warning console check passed. See [`docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md`](docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md). This remains a controlled operator test, not proof of accuracy across handwriting, equations, damaged pages, low light, or all real phone photos.
 
 A second complete functional pass on 2026-10-07 retested the live local provider, phone-photo upload, generation, all six learning-pack views, invalid-input responses, Markdown export, JSON export, collage export, browser console, tests, lint, and production build. It also repaired ESLint coverage for tracked `.mjs` QA scripts. See [`docs/validation/FUNCTIONAL_VERIFICATION_2026-10-07.md`](docs/validation/FUNCTIONAL_VERIFICATION_2026-10-07.md).
+
+The deep-teaching pass completed across 2026-10-07 and 2026-10-08. A live photography source produced three structured lessons with five study steps, two mistake checks, and two verbatim evidence quotes each. The audit deliberately rejected familiar but unsupported additions such as `camera sensor`, `portrait`, and `proper exposure`; all three final lessons were rebuilt from exact source statements and passed the strict deterministic recheck. Ten tests, ESLint, the optimized build, desktop review, 390 × 844 review, overflow checks, and a clean browser console passed. See [`docs/validation/DEEP_TEACHING_AND_EVIDENCE_GATE_2026-10-07.md`](docs/validation/DEEP_TEACHING_AND_EVIDENCE_GATE_2026-10-07.md).
 
 ## Learner validation
 

@@ -74,7 +74,8 @@ const svg = `
       <path d="M44 27a17 17 0 1017 17H44z" fill="#f0b45a"/><circle cx="44" cy="44" r="7" fill="#fff8eb"/>
       <text x="82" y="43" class="cardTitle">Aperture</text>
       <text x="82" y="70" class="cardBody">Lens opening</text>
-      <text x="24" y="108" class="cardBody">Affects light and depth of field.</text>
+      <text x="24" y="105" class="cardBody">Wider: more light, shallower depth.</text>
+      <text x="24" y="129" class="cardBody">Narrower: less light, deeper depth.</text>
     </g>
     <g transform="translate(0 157)">
       <rect width="338" height="140" rx="20" fill="#fffdf7" stroke="#d8c7b1"/>
@@ -82,7 +83,8 @@ const svg = `
       <path d="M27 44h34M45 31l16 13-16 13" fill="none" stroke="#fff8eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
       <text x="82" y="43" class="cardTitle">Shutter speed</text>
       <text x="82" y="70" class="cardBody">Exposure time</text>
-      <text x="24" y="108" class="cardBody">Affects light and motion blur.</text>
+      <text x="24" y="105" class="cardBody">Faster: less light, freezes motion.</text>
+      <text x="24" y="129" class="cardBody">Slower: more light, shows motion blur.</text>
     </g>
     <g transform="translate(0 314)">
       <rect width="338" height="140" rx="20" fill="#fffdf7" stroke="#d8c7b1"/>
@@ -90,7 +92,8 @@ const svg = `
       <g fill="#fff8eb"><circle cx="35" cy="36" r="3"/><circle cx="48" cy="33" r="2"/><circle cx="54" cy="45" r="3"/><circle cx="38" cy="50" r="2.5"/></g>
       <text x="82" y="43" class="cardTitle">ISO</text>
       <text x="82" y="70" class="cardBody">Signal amplification</text>
-      <text x="24" y="108" class="cardBody">Affects brightness and visible noise.</text>
+      <text x="24" y="105" class="cardBody">Higher: brighter, more visible noise.</text>
+      <text x="24" y="129" class="cardBody">Lower: less noise, needs more light.</text>
     </g>
   </g>
 

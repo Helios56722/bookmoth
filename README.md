@@ -62,6 +62,10 @@ OpenAI is an optional cloud provider. Creating a key does not guarantee free API
 
 See the official [OpenAI authentication guidance](https://developers.openai.com/api/reference/overview) and [prepaid billing guidance](https://help.openai.com/en/articles/8264644-setting-up-and-managing-prepaid-api-billing).
 
+### Public Vercel mode
+
+The hosted app uses Vercel AI Gateway with the deployment's automatic OIDC credential. This avoids storing an OpenAI key in the project. Gateway requests use the Vercel team's AI credits, so review the current balance and keep automatic top-up off unless the project owner intentionally enables it.
+
 Both providers live behind `src/app/api/create/route.js` and return the same learning-pack schema. Cloud mode separates the work into source extraction and complete translation, global corroboration with traceable links, and evidence-locked teaching. Source selection is based on authority and proximity to the claim rather than country: original-language Chinese sources are prioritized for Chinese-origin subjects, while every other subject receives the same original-language treatment.
 
 Local mode separates reading, teaching, and verification. The vision model transcribes each image. The teaching model drafts layered lessons from that extracted evidence, then performs a separate support review. Bookmoth rejects unknown source IDs, evidence quotes that do not appear in the cited OCR text, incomplete lesson structures, and subject vocabulary that is absent from the source. Rejected lessons receive one constrained correction pass. If expanded wording still fails, Bookmoth keeps the useful lesson grouping but rebuilds every factual answer from exact evidence instead of filling the gap from memory.
@@ -74,7 +78,7 @@ Bookmoth is a Next.js application with a server API. GitHub Pages cannot run its
 
 1. Sign in to Vercel and import `Helios56722/bookmoth`.
 2. Keep the repository root as the project root. Vercel should detect Next.js.
-3. Add `BOOKMOTH_PROVIDER=openai`, `OPENAI_MODEL=gpt-5-mini`, and `OPENAI_API_KEY` as server-side environment variables for Production and Preview. Never prefix the key with `NEXT_PUBLIC_`.
+3. Add `BOOKMOTH_PROVIDER=openai`, `OPENAI_BASE_URL=https://ai-gateway.vercel.sh/v1`, and `OPENAI_MODEL=openai/gpt-5-mini` as server-side environment variables for Production and Preview. Vercel supplies `VERCEL_OIDC_TOKEN` automatically.
 4. Deploy the tested `main` branch.
 5. Verify `/api/create` reports `ready: true`, then complete one permitted screenshot-to-pack test on the deployment.
 
@@ -82,7 +86,7 @@ The local Ollama provider is intentionally not a public-hosting backend; a Verce
 
 ## Privacy boundary
 
-Selected images remain in browser memory while you prepare the pack. In default local mode, clicking **Create learning pack** sends them only to Ollama on the same PC. In optional OpenAI mode, they are sent to OpenAI under the configured account's provider terms. This repository does not add a database or generation history.
+Selected images remain in browser memory while you prepare the pack. In default local mode, clicking **Create learning pack** sends them only to Ollama on the same PC. In hosted mode, they pass through Vercel AI Gateway to the selected model provider under those services' terms. This repository does not add a database or generation history.
 
 Do not upload private records, answer sheets, copyrighted material you are not allowed to process, or content from an active or proctored assessment.
 

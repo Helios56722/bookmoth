@@ -550,9 +550,13 @@ function getProviderConfig() {
     throw new ProviderError("BOOKMOTH_PROVIDER must be either ollama or openai.", 503);
   }
   if (provider === "openai") {
+    const baseURL = (process.env.OPENAI_BASE_URL || "").replace(/\/$/, "");
+    const gateway = baseURL === "https://ai-gateway.vercel.sh/v1";
     return {
       provider,
-      model: process.env.OPENAI_MODEL || "gpt-5-mini",
+      model: process.env.OPENAI_MODEL || (gateway ? "openai/gpt-5-mini" : "gpt-5-mini"),
+      baseURL: baseURL || undefined,
+      gateway,
       local: false,
     };
   }
@@ -675,10 +679,16 @@ async function researchWithOpenAI(client, config, body, extractedSources) {
 }
 
 async function createWithOpenAI(config, body) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new ProviderError("OpenAI is selected, but OPENAI_API_KEY is missing from .env.local.", 503);
+  const apiKey = process.env.OPENAI_API_KEY || (config.gateway ? process.env.VERCEL_OIDC_TOKEN : "");
+  if (!apiKey) {
+    throw new ProviderError(
+      config.gateway
+        ? "Vercel AI Gateway is selected, but no OIDC or gateway credential is available."
+        : "OpenAI is selected, but OPENAI_API_KEY is missing from .env.local.",
+      503,
+    );
   }
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = new OpenAI({ apiKey, ...(config.baseURL ? { baseURL: config.baseURL } : {}) });
   const extractedSources = await extractSourcesWithOpenAI(client, config, body);
   assertReadableEvidence(extractedSources);
   const research = await researchWithOpenAI(client, config, body, extractedSources);
@@ -1157,14 +1167,17 @@ export async function GET() {
   try {
     const config = getProviderConfig();
     if (config.provider === "openai") {
+      const credentialAvailable = Boolean(process.env.OPENAI_API_KEY || (config.gateway && process.env.VERCEL_OIDC_TOKEN));
       return Response.json({
-        provider: "openai",
+        provider: config.gateway ? "vercel-ai-gateway" : "openai",
         model: config.model,
         local: false,
-        ready: Boolean(process.env.OPENAI_API_KEY),
+        ready: credentialAvailable,
         researchAvailable: true,
         translationAvailable: true,
-        detail: process.env.OPENAI_API_KEY ? "Cloud reading, full translation, and global research are configured." : "OPENAI_API_KEY is missing.",
+        detail: credentialAvailable
+          ? `${config.gateway ? "Vercel AI Gateway" : "OpenAI"} reading, full translation, and global research are configured.`
+          : (config.gateway ? "Vercel AI Gateway credentials are unavailable." : "OPENAI_API_KEY is missing."),
       });
     }
     try {

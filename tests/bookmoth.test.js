@@ -29,6 +29,39 @@ test("normalization preserves source links and fills safe defaults", () => {
   assert.deepEqual(pack.practice, []);
 });
 
+test("normalization preserves complete translations and traceable research links", () => {
+  const pack = normalizeLearningPack({
+    sources: [{
+      sourceId: "S1",
+      sourceType: "upload",
+      sourceTitle: "课堂笔记.png",
+      extractedText: "光合作用把光能转化为化学能。",
+      confidence: "high",
+      unclearText: [],
+      detectedLanguage: "Simplified Chinese",
+      translatedText: "Photosynthesis converts light energy into chemical energy.",
+      translationLanguage: "English",
+      translationConfidence: "high",
+    }],
+    languageProfile: {
+      detectedLanguages: ["Simplified Chinese"],
+      outputLanguage: "English",
+      fullSourceTranslation: true,
+      translationNotice: "Machine translation requires review.",
+    },
+    researchProfile: { requested: true, performed: true, sourceCount: 1, note: "Cross-checked." },
+    researchSources: [{ id: "R1", title: "Primary source", url: "https://example.edu/source", publisher: "example.edu" }],
+  });
+
+  assert.equal(pack.sources[0].translatedText, "Photosynthesis converts light energy into chemical energy.");
+  assert.equal(pack.languageProfile.fullSourceTranslation, true);
+  assert.equal(pack.researchProfile.performed, true);
+  assert.equal(pack.researchSources[0].url, "https://example.edu/source");
+  const markdown = learningPackToMarkdown(pack);
+  assert.match(markdown, /Full English translation/);
+  assert.match(markdown, /\[Primary source\]\(https:\/\/example\.edu\/source\)/);
+});
+
 test("sample pack contains all public output types", () => {
   const pack = sampleLearningPack();
   assert.ok(pack.concepts.length > 0);

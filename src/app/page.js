@@ -20,6 +20,21 @@ const outputTabs = [
   ["sources", "Source check"],
 ];
 
+const learningLanguages = [
+  "English",
+  "Spanish",
+  "Simplified Chinese",
+  "Traditional Chinese",
+  "French",
+  "German",
+  "Japanese",
+  "Korean",
+  "Arabic",
+  "Portuguese",
+  "Hindi",
+  "Vietnamese",
+];
+
 function MothMark({ compact = false }) {
   return (
     <span className={compact ? "moth-mark compact" : "moth-mark"} aria-hidden="true">
@@ -151,6 +166,9 @@ export default function Home() {
   const [context, setContext] = useState("");
   const [goal, setGoal] = useState("");
   const [referenceUrl, setReferenceUrl] = useState("");
+  const [outputLanguage, setOutputLanguage] = useState("English");
+  const [translateFullSource, setTranslateFullSource] = useState(false);
+  const [researchMode, setResearchMode] = useState(true);
   const [studyUseAccepted, setStudyUseAccepted] = useState(false);
   const [pack, setPack] = useState(null);
   const [activeTab, setActiveTab] = useState("guide");
@@ -211,7 +229,16 @@ export default function Home() {
       const response = await fetch("/api/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sources, context, goal, referenceUrl, studyUseAccepted }),
+        body: JSON.stringify({
+          sources,
+          context,
+          goal,
+          referenceUrl,
+          outputLanguage,
+          translateFullSource,
+          researchMode: researchMode && providerStatus?.researchAvailable === true,
+          studyUseAccepted,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Bookmoth could not create a learning pack.");
@@ -223,6 +250,8 @@ export default function Home() {
           provider: data.provider.name,
           model: data.provider.model,
           teachingModel: data.provider.teachingModel,
+          researchAvailable: data.provider.researchAvailable,
+          translationAvailable: true,
           detail: data.provider.local ? "Learning pack created on this PC." : "Learning pack created with the configured cloud provider.",
         });
       }
@@ -248,6 +277,9 @@ export default function Home() {
     setContext("Photography fundamentals");
     setGoal("Understand how aperture, shutter speed, and ISO change a photo");
     setReferenceUrl("");
+    setOutputLanguage("English");
+    setTranslateFullSource(false);
+    setResearchMode(true);
     setStudyUseAccepted(true);
     setPack(sampleLearningPack());
     setActiveTab("guide");
@@ -259,6 +291,9 @@ export default function Home() {
     setContext("");
     setGoal("");
     setReferenceUrl("");
+    setOutputLanguage("English");
+    setTranslateFullSource(false);
+    setResearchMode(true);
     setStudyUseAccepted(false);
     setPack(null);
     setMessage("");
@@ -395,6 +430,24 @@ export default function Home() {
             <label>What do you want to learn?<textarea value={goal} onChange={(event) => setGoal(event.target.value)} placeholder="Example: understand the steps and remember the tool names" /></label>
             <label>Original link <span>(optional)</span><input type="url" value={referenceUrl} onChange={(event) => setReferenceUrl(event.target.value)} placeholder="https://…" /></label>
 
+            <fieldset className="evidence-controls">
+              <legend>Language and evidence</legend>
+              <label>Learning pack language
+                <select value={outputLanguage} onChange={(event) => setOutputLanguage(event.target.value)}>
+                  {learningLanguages.map((language) => <option value={language} key={language}>{language}</option>)}
+                </select>
+              </label>
+              <label className="control-check">
+                <input type="checkbox" checked={translateFullSource} onChange={(event) => setTranslateFullSource(event.target.checked)} />
+                <span><b>Translate every extracted source in full</b><small>Preserves the original text beside a complete machine translation.</small></span>
+              </label>
+              <label className={`control-check ${providerStatus?.researchAvailable ? "" : "disabled"}`}>
+                <input type="checkbox" checked={researchMode && providerStatus?.researchAvailable === true} disabled={!providerStatus?.researchAvailable} onChange={(event) => setResearchMode(event.target.checked)} />
+                <span><b>Cross-check with global sources</b><small>{providerStatus?.researchAvailable ? "Searches primary and original-language sources across relevant regions." : "Available in the deployed cloud version; local Ollama stays upload-only."}</small></span>
+              </label>
+              <p>Bookmoth ranks sources by authority and proximity to the claim. Chinese-language sources are prioritized for Chinese-origin material; every subject receives the same original-language treatment.</p>
+            </fieldset>
+
             <label className="integrity-check">
               <input type="checkbox" checked={studyUseAccepted} onChange={(event) => setStudyUseAccepted(event.target.checked)} />
               <span>I have permission to use these materials. I am studying, not answering an active or proctored assessment.</span>
@@ -409,7 +462,7 @@ export default function Home() {
             </div>
 
             <button className="button primary full" type="button" disabled={busy || sources[0]?.displayOnly || providerStatus?.ready === false} onClick={createPack}>
-              {busy ? "Building and checking lessons…" : "Create learning pack"}
+              {busy ? (providerStatus?.researchAvailable && researchMode ? "Reading, researching, and checking…" : "Reading and checking lessons…") : "Create learning pack"}
             </button>
             {sources[0]?.displayOnly && <button className="button full" type="button" onClick={() => fileInput.current?.click()}>Replace sample with my images</button>}
             {message && <p className="status-message" role="status">{message}</p>}
@@ -432,9 +485,15 @@ export default function Home() {
             ) : (
               <>
                 <div className="pack-heading">
-                  <div><p>Learning pack</p><h3>{pack.title}</h3><span>{pack.overview}</span></div>
-                  <div className="export-actions"><button type="button" onClick={exportMarkdown}>Markdown ↓</button><button type="button" onClick={exportJson}>JSON ↓</button></div>
-                </div>
+                    <div><p>Learning pack</p><h3>{pack.title}</h3><span>{pack.overview}</span></div>
+                    <div className="export-actions"><button type="button" onClick={exportMarkdown}>Markdown ↓</button><button type="button" onClick={exportJson}>JSON ↓</button></div>
+                  </div>
+                  <div className="verification-ledger" aria-label="Verification summary">
+                    <div><span>Source grounding</span><b>{pack.evidenceReview.status === "source-checked" ? "Passed" : "Limited"}</b></div>
+                    <div><span>Global research</span><b>{pack.researchProfile?.performed ? `${pack.researchProfile.sourceCount} linked sources` : "Not performed"}</b></div>
+                    <div><span>Output language</span><b>{pack.languageProfile?.outputLanguage || "English"}</b></div>
+                    <div><span>Full translation</span><b>{pack.languageProfile?.fullSourceTranslation ? "Included" : "Not requested"}</b></div>
+                  </div>
                 <div className="tab-list" role="tablist" aria-label="Learning pack views">
                   {outputTabs.map(([key, label]) => <button key={key} role="tab" aria-selected={activeTab === key} type="button" onClick={() => setActiveTab(key)}>{label}</button>)}
                 </div>
@@ -445,7 +504,7 @@ export default function Home() {
                   {activeTab === "report" && <div className="content-stack"><h4>Structured report</h4>{pack.reportSections.map((item, index) => <article className="report-section" key={`${item.heading}-${index}`}><div><h5>{item.heading}</h5><SourcePills ids={item.sourceIds} /></div><p>{item.body}</p></article>)}</div>}
                   {activeTab === "practice" && <div className="content-stack"><h4>Flashcards</h4><div className="flashcard-grid">{pack.flashcards.map((item, index) => <details key={`${item.front}-${index}`}><summary>{item.front}</summary><p>{item.back}</p><SourcePills ids={item.sourceIds} /></details>)}</div><h4>Practice questions</h4>{pack.practice.map((item, index) => <details className="practice-item" key={`${item.question}-${index}`}><summary><span>{index + 1}</span>{item.question}</summary><p><b>Hint:</b> {item.hint}</p><p><b>Answer:</b> {item.answer}</p><SourcePills ids={item.sourceIds} /></details>)}</div>}
                   {activeTab === "collage" && <div className="content-stack"><div className="collage-heading"><div><h4>{pack.collage.title}</h4><p>{pack.collage.caption}</p></div><button type="button" onClick={exportCollage}>Download PNG ↓</button></div><div className="collage-board"><section className="collage-sources" aria-label="Source material"><p>Source material · {sources.length} {sources.length === 1 ? "item" : "items"}</p><div className="collage-grid">{sources.map((source, index) => <figure key={source.id}><NextImage src={source.dataUrl} alt={`Source S${index + 1}: ${source.name}`} width={800} height={600} unoptimized /><figcaption><b>S{index + 1}</b><span>{source.name}</span></figcaption></figure>)}</div></section><aside className="collage-review"><h5>Quick review</h5><p>Explain each point in your own words, then check it against the source.</p><ul className="callout-list">{pack.collage.callouts.map((item, index) => <li key={`${item.text}-${index}`}><SourcePills ids={item.sourceIds} /><span>{item.text}</span></li>)}</ul></aside></div></div>}
-                  {activeTab === "sources" && <div className="content-stack"><h4>OCR and source check</h4><p className="helper-copy">Low confidence and unclear text are review prompts, not automatic corrections.</p>{pack.sources.map((source, index) => <article className="source-extract" key={`${source.sourceId}-${index}`}><div><h5>{source.sourceId}</h5><span className={`confidence ${source.confidence}`}>{source.confidence} confidence</span></div><p>{source.extractedText}</p>{source.unclearText.length > 0 && <div className="unclear"><b>Unclear in the image</b>{source.unclearText.map((item, itemIndex) => <span key={`${item}-${itemIndex}`}>{item}</span>)}</div>}</article>)}{pack.cautions.length > 0 && <div className="caution-box"><b>Check before relying on this</b>{pack.cautions.map((item, index) => <p key={`${item}-${index}`}>{item}</p>)}</div>}</div>}
+                  {activeTab === "sources" && <div className="content-stack source-check-view"><h4>Source, translation, and research check</h4><p className="helper-copy">Low confidence and unclear text are review prompts. Machine translation and web corroboration improve coverage, but neither replaces the original source or qualified review.</p><section className={`research-summary ${pack.researchProfile?.performed ? "performed" : "source-only"}`}><div><span aria-hidden="true">{pack.researchProfile?.performed ? "✓" : "i"}</span><div><b>{pack.researchProfile?.performed ? "Global corroboration completed" : "Source-only pack"}</b><p>{pack.researchProfile?.note}</p></div></div>{pack.researchSources?.length > 0 && <div className="research-source-list">{pack.researchSources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.id}><span>{source.id}</span><div><b>{source.title}</b><small>{source.publisher} · {source.language}</small></div><em>Open ↗</em></a>)}</div>}</section>{pack.sources.map((source, index) => <article className="source-extract" key={`${source.sourceId}-${index}`}><div><div><h5>{source.sourceId} · {source.sourceTitle}</h5><small>{source.sourceType === "web-research" ? "Corroboration evidence" : `Detected language: ${source.detectedLanguage}`}</small></div><span className={`confidence ${source.confidence}`}>{source.confidence} confidence</span></div><section><b>Original extracted text</b><p>{source.extractedText}</p></section>{source.translatedText && <section className="translation-block"><div><b>Full {source.translationLanguage} translation</b><span className={`confidence ${source.translationConfidence}`}>{source.translationConfidence} confidence</span></div><p>{source.translatedText}</p><small>Machine translation: verify names, formulas, quotations, and technical terms against the original.</small></section>}{source.unclearText.length > 0 && <div className="unclear"><b>Unclear in the image</b>{source.unclearText.map((item, itemIndex) => <span key={`${item}-${itemIndex}`}>{item}</span>)}</div>}</article>)}{pack.cautions.length > 0 && <div className="caution-box"><b>Check before relying on this</b>{pack.cautions.map((item, index) => <p key={`${item}-${index}`}>{item}</p>)}</div>}</div>}
                 </div>
               </>
             )}

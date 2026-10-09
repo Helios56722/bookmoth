@@ -13,6 +13,9 @@ The project is built for students, hobby learners, and people developing a new s
 - Trace generated items back to source IDs.
 - See whether each detailed lesson passed the source-ID, exact-quote, structure, and separate support-review gates.
 - Review extracted text, confidence, unclear fragments, and cautions.
+- Detect the original source language and optionally preserve a complete machine translation beside the original transcription.
+- In cloud mode, run a separate global corroboration pass and open every cited web source from the Source check panel.
+- See whether a pack is source-grounded only or has also been cross-checked with live web evidence.
 - Export the pack as Markdown or JSON.
 - Export a visual source collage as PNG.
 
@@ -59,11 +62,23 @@ OpenAI is an optional cloud provider. Creating a key does not guarantee free API
 
 See the official [OpenAI authentication guidance](https://developers.openai.com/api/reference/overview) and [prepaid billing guidance](https://help.openai.com/en/articles/8264644-setting-up-and-managing-prepaid-api-billing).
 
-Both provider calls live in `src/app/api/create/route.js` and return the same learning-pack schema.
+Both providers live behind `src/app/api/create/route.js` and return the same learning-pack schema. Cloud mode separates the work into source extraction and complete translation, global corroboration with traceable links, and evidence-locked teaching. Source selection is based on authority and proximity to the claim rather than country: original-language Chinese sources are prioritized for Chinese-origin subjects, while every other subject receives the same original-language treatment.
 
 Local mode separates reading, teaching, and verification. The vision model transcribes each image. The teaching model drafts layered lessons from that extracted evidence, then performs a separate support review. Bookmoth rejects unknown source IDs, evidence quotes that do not appear in the cited OCR text, incomplete lesson structures, and subject vocabulary that is absent from the source. Rejected lessons receive one constrained correction pass. If expanded wording still fails, Bookmoth keeps the useful lesson grouping but rebuilds every factual answer from exact evidence instead of filling the gap from memory.
 
-These checks verify that the displayed teaching is grounded in the supplied material. They do not prove that the material itself is correct. Learners should compare OCR with the original image and add an authoritative source when the uploaded material is incomplete or questionable. OpenAI mode remains optional and should also be checked against the cited images.
+These checks verify that the displayed teaching is grounded in the supplied material. They do not prove absolute correctness. Cloud corroboration improves the evidence base, but linked sources and machine translation still require human review for high-stakes academic, medical, legal, financial, or safety decisions.
+
+## Public deployment
+
+Bookmoth is a Next.js application with a server API. GitHub Pages cannot run its image-analysis route or protect an AI-provider secret. The intended public setup is GitHub for version control and CI, connected to Vercel for the running service.
+
+1. Sign in to Vercel and import `Helios56722/bookmoth`.
+2. Keep the repository root as the project root. Vercel should detect Next.js.
+3. Add `BOOKMOTH_PROVIDER=openai`, `OPENAI_MODEL=gpt-5-mini`, and `OPENAI_API_KEY` as server-side environment variables for Production and Preview. Never prefix the key with `NEXT_PUBLIC_`.
+4. Deploy the tested `main` branch.
+5. Verify `/api/create` reports `ready: true`, then complete one permitted screenshot-to-pack test on the deployment.
+
+The local Ollama provider is intentionally not a public-hosting backend; a Vercel function cannot reach a model running on Jaylan's PC. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the point-and-click release and verification checklist.
 
 ## Privacy boundary
 

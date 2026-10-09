@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import sharp from "sharp";
 import { Buffer } from "node:buffer";
+import { franc } from "franc-min";
 import {
   buildEvidenceLockedPack,
   buildSourceLockedDeepLesson,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/bookmoth";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const packSchema = {
   type: "object",
@@ -38,12 +40,18 @@ const packSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["sourceId", "extractedText", "confidence", "unclearText"],
+        required: ["sourceId", "sourceType", "sourceTitle", "extractedText", "confidence", "unclearText", "detectedLanguage", "translatedText", "translationLanguage", "translationConfidence"],
         properties: {
           sourceId: { type: "string" },
+          sourceType: { type: "string", enum: ["upload", "web-research"] },
+          sourceTitle: { type: "string" },
           extractedText: { type: "string" },
           confidence: { type: "string", enum: ["high", "medium", "low"] },
           unclearText: { type: "array", items: { type: "string" } },
+          detectedLanguage: { type: "string" },
+          translatedText: { type: "string" },
+          translationLanguage: { type: "string" },
+          translationConfidence: { type: "string", enum: ["high", "medium", "low", "not-requested"] },
         },
       },
     },
@@ -252,6 +260,36 @@ const packSchema = {
   },
 };
 
+const sourceExtractionSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["sources"],
+  properties: {
+    sources: {
+      type: "array",
+      minItems: 1,
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["sourceId", "sourceType", "sourceTitle", "extractedText", "confidence", "unclearText", "detectedLanguage", "translatedText", "translationLanguage", "translationConfidence"],
+        properties: {
+          sourceId: { type: "string" },
+          sourceType: { type: "string", enum: ["upload"] },
+          sourceTitle: { type: "string" },
+          extractedText: { type: "string" },
+          confidence: { type: "string", enum: ["high", "medium", "low"] },
+          unclearText: { type: "array", items: { type: "string" } },
+          detectedLanguage: { type: "string" },
+          translatedText: { type: "string" },
+          translationLanguage: { type: "string" },
+          translationConfidence: { type: "string", enum: ["high", "medium", "low", "not-requested"] },
+        },
+      },
+    },
+  },
+};
+
 const deepLessonsResponseSchema = {
   type: "object",
   additionalProperties: false,
@@ -362,6 +400,142 @@ function extractOutputText(response) {
     .find((item) => item.type === "output_text")?.text;
 }
 
+function requestedLanguage(body = {}) {
+  const value = typeof body.outputLanguage === "string" ? body.outputLanguage.trim() : "";
+  return value && value.length <= 80 ? value : "English";
+}
+
+function wantsFullTranslation(body = {}) {
+  return body.translateFullSource === true;
+}
+
+function detectSourceLanguage(extractedText = "", reportedLanguage = "") {
+  const text = typeof extractedText === "string" ? extractedText.trim() : "";
+  if (text.length >= 20) {
+    const code = franc(text, { minLength: 20 });
+    if (code && code !== "und") {
+      try {
+        return new Intl.DisplayNames(["en"], { type: "language" }).of(code) || code;
+      } catch {
+        return code;
+      }
+    }
+  }
+  const reported = typeof reportedLanguage === "string" ? reportedLanguage.trim() : "";
+  return reported && !/language name|original source language|unknown/i.test(reported) ? reported : "Unknown";
+}
+
+function finalizeSourceTranslation(source = {}, body = {}) {
+  const extractedText = typeof source.extractedText === "string" ? source.extractedText.trim() : "";
+  const unclearText = Array.isArray(source.unclearText)
+    ? source.unclearText.filter((item) => typeof item === "string" && item.trim())
+    : [];
+
+  if (!wantsFullTranslation(body)) {
+    return {
+      ...source,
+      unclearText,
+      detectedLanguage: detectSourceLanguage(extractedText, source.detectedLanguage),
+      translatedText: "",
+      translationLanguage: "",
+      translationConfidence: "not-requested",
+    };
+  }
+
+  const translatedText = typeof source.translatedText === "string" ? source.translatedText.trim() : "";
+  const originalLength = Array.from(extractedText.replace(/\s/g, "")).length;
+  const translationLength = Array.from(translatedText.replace(/\s/g, "")).length;
+  const minimumLength = Math.max(24, Math.floor(originalLength * 0.18));
+  const looksIncomplete = !translatedText || translationLength < minimumLength;
+  const warning = "The requested full translation may be incomplete. Compare it with the original source before relying on it.";
+
+  return {
+    ...source,
+    unclearText: looksIncomplete && !unclearText.includes(warning) ? [...unclearText, warning] : unclearText,
+    detectedLanguage: detectSourceLanguage(extractedText, source.detectedLanguage),
+    translatedText,
+    translationLanguage: requestedLanguage(body),
+    translationConfidence: looksIncomplete
+      ? "low"
+      : (["high", "medium", "low"].includes(source.translationConfidence) ? source.translationConfidence : "low"),
+  };
+}
+
+function assertReadableEvidence(sources = []) {
+  const hasEnoughEvidence = sources.some((source) => {
+    const text = typeof source?.extractedText === "string" ? source.extractedText.trim() : "";
+    const evidenceCharacters = Array.from(text).filter((character) => /[\p{L}\p{N}]/u.test(character)).length;
+    return evidenceCharacters >= 24 && !/^no readable text found\.?$/i.test(text);
+  });
+  if (!hasEnoughEvidence) {
+    throw new ProviderError(
+      "Bookmoth could not find enough reliably readable study text in these images. Use a sharper, closer screenshot that clearly shows the question, notes, labels, or instructions.",
+      422,
+    );
+  }
+}
+
+function normalizeUrl(value = "") {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function collectResearchSources(response = {}) {
+  const cited = [];
+  for (const item of response.output || []) {
+    for (const content of item.content || []) {
+      for (const annotation of content.annotations || []) {
+        if (annotation.type !== "url_citation") continue;
+        const url = normalizeUrl(annotation.url);
+        if (url) cited.push({ url, title: annotation.title || "Web source" });
+      }
+    }
+    if (item.type === "web_search_call") {
+      for (const source of item.action?.sources || []) {
+        const url = normalizeUrl(source.url);
+        if (url) cited.push({ url, title: "Web source" });
+      }
+    }
+  }
+
+  const unique = [];
+  const seen = new Set();
+  for (const item of cited) {
+    if (seen.has(item.url)) continue;
+    seen.add(item.url);
+    const host = new URL(item.url).hostname.replace(/^www\./, "");
+    unique.push({
+      id: `R${unique.length + 1}`,
+      title: item.title === "Web source" ? host : item.title,
+      url: item.url,
+      publisher: host,
+      language: "Original publication language",
+      sourceType: "Web corroboration source",
+      whyUsed: "Used to cross-check the uploaded material in Bookmoth's research pass.",
+    });
+    if (unique.length === 10) break;
+  }
+  return unique;
+}
+
+function buildLanguageProfile(body = {}, sources = []) {
+  const detectedLanguages = [...new Set(sources
+    .map((source) => source.detectedLanguage)
+    .filter((language) => typeof language === "string" && language.trim()))];
+  return {
+    detectedLanguages,
+    outputLanguage: requestedLanguage(body),
+    fullSourceTranslation: wantsFullTranslation(body),
+    translationNotice: wantsFullTranslation(body)
+      ? "Full extracted text was machine-translated. Check names, formulas, quotations, and technical terms against the original."
+      : "No full-source translation was requested.",
+  };
+}
+
 class ProviderError extends Error {
   constructor(message, status = 500) {
     super(message);
@@ -392,11 +566,18 @@ function getProviderConfig() {
 }
 
 function createPrompt(body, extractedSources = null) {
-  const sourceList = body.sources
-    .map((source, index) => `S${index + 1}: ${source.name || `Source ${index + 1}`}`)
+  const listedSources = extractedSources || body.sources.map((source, index) => ({
+    sourceId: `S${index + 1}`,
+    sourceTitle: source.name || `Source ${index + 1}`,
+  }));
+  const sourceList = listedSources
+    .map((source, index) => `${source.sourceId || `S${index + 1}`}: ${source.sourceTitle || source.name || `Source ${index + 1}`}`)
     .join("\n");
   const lockedEvidence = extractedSources
-    ? extractedSources.map((source) => `${source.sourceId}:\n${source.extractedText}`).join("\n\n")
+    ? extractedSources.map((source) => {
+      const translation = source.translatedText ? `\nFull ${source.translationLanguage} translation:\n${source.translatedText}` : "";
+      return `${source.sourceId} (${source.sourceType || "upload"}):\n${source.extractedText}${translation}`;
+    }).join("\n\n")
     : null;
   return [
     "You are Bookmoth, a careful learning-material editor.",
@@ -414,6 +595,11 @@ function createPrompt(body, extractedSources = null) {
     "Use stable glow point IDs G1, G2, and so on. Every thread must refer to IDs present in glowPoints.",
     "Put unreadable or ambiguous fragments in unclearText and explain important uncertainty in cautions.",
     "Do not answer or facilitate an active, timed, or proctored assessment. Treat visible questions as later study material.",
+    `Write the learning pack in ${requestedLanguage(body)}. Keep evidenceQuotes verbatim in the language in which they appear in the evidence.`,
+    wantsFullTranslation(body)
+      ? `For each uploaded source, preserve its complete original transcription and its complete ${requestedLanguage(body)} translation. Do not shorten the translation into a summary.`
+      : "Do not invent a source translation when no full translation was requested.",
+    "Research quality is not determined by country. Prefer sources closest to the claim: official documentation, standards bodies, original research, universities, public agencies, and recognized subject experts. Use original-language sources when the subject originated in that language, including Chinese sources for Chinese-origin material, and surface meaningful disagreement instead of forcing certainty.",
     `Learner context: ${body.context || "No extra context supplied."}`,
     `Learning goal: ${body.goal || "Understand and remember the supplied material."}`,
     `Recorded source link: ${body.referenceUrl || "None supplied."}`,
@@ -422,26 +608,98 @@ function createPrompt(body, extractedSources = null) {
   ].join("\n\n");
 }
 
-async function createWithOpenAI(config, body, prompt) {
+async function extractSourcesWithOpenAI(client, config, body) {
+  const language = requestedLanguage(body);
+  const response = await client.responses.create({
+    model: config.model,
+    input: [{
+      role: "user",
+      content: [
+        {
+          type: "input_text",
+          text: [
+            "Read each supplied image as a separate source in the order provided.",
+            "Transcribe all visible source text exactly. Do not explain, correct, complete, or modernize it.",
+            "Detect the language of the original visible source text before translating and record unreadable fragments. detectedLanguage must describe the original source, never the requested translation language unless they are truly the same.",
+            wantsFullTranslation(body)
+              ? `Translate the complete extracted text into ${language}. This must be a full translation, not a summary. Preserve headings, equations, labels, names, and sequence.`
+              : "Set translatedText and translationLanguage to empty strings and translationConfidence to not-requested.",
+            "Use source IDs S1, S2, and so on, matching image order. sourceType is upload. sourceTitle should use the matching filename listed below.",
+            body.sources.map((source, index) => `S${index + 1}: ${source.name || `Source ${index + 1}`}`).join("\n"),
+          ].join("\n\n"),
+        },
+        ...body.sources.map((source) => ({ type: "input_image", image_url: source.dataUrl, detail: "high" })),
+      ],
+    }],
+    text: { format: { type: "json_schema", name: "bookmoth_source_extraction", strict: true, schema: sourceExtractionSchema } },
+  });
+  const outputText = extractOutputText(response);
+  if (!outputText) throw new ProviderError("OpenAI did not return source extraction results.", 502);
+  const parsed = JSON.parse(outputText);
+  return Array.isArray(parsed.sources)
+    ? parsed.sources.map((source) => finalizeSourceTranslation(source, body))
+    : [];
+}
+
+async function researchWithOpenAI(client, config, body, extractedSources) {
+  if (body.researchMode !== true) return { memo: "", sources: [] };
+  const evidence = evidenceForPrompt(extractedSources);
+  const response = await client.responses.create({
+    model: config.model,
+    tools: [{ type: "web_search", search_context_size: "high" }],
+    tool_choice: "required",
+    include: ["web_search_call.action.sources"],
+    input: [{
+      role: "user",
+      content: [{
+        type: "input_text",
+        text: [
+          "Create a concise evidence dossier that checks the factual claims and teaching context in the supplied source transcription.",
+          "Search globally and across relevant languages. Do not assume one country produces the best source. Prefer primary or official material, original research, standards, universities, public agencies, and original-language sources closest to the subject.",
+          "For Chinese-origin material, actively search authoritative Chinese-language sources as well as strong independent sources in other languages. Apply the same original-language rule to every region.",
+          "State what is corroborated, what is disputed, and what remains uncertain. Do not answer an active or proctored test. Keep citations attached to the claims they support.",
+          body.referenceUrl ? `The learner supplied this possible original source. Inspect it if relevant and accessible, but do not treat it as authoritative without evaluation: ${body.referenceUrl}` : "No original URL was supplied.",
+          `Learner context: ${body.context || "Not supplied."}`,
+          `Learning goal: ${body.goal || "Understand and remember the material."}`,
+          `Source transcription:\n${evidence}`,
+        ].join("\n\n"),
+      }],
+    }],
+  });
+  const memo = extractOutputText(response)?.trim() || "";
+  const sources = collectResearchSources(response);
+  if (!memo || sources.length < 2) {
+    throw new ProviderError("Global cross-checking did not return enough traceable evidence. Try again or turn off global research for a source-only pack.", 502);
+  }
+  return { memo, sources };
+}
+
+async function createWithOpenAI(config, body) {
   if (!process.env.OPENAI_API_KEY) {
     throw new ProviderError("OpenAI is selected, but OPENAI_API_KEY is missing from .env.local.", 503);
   }
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const extractedSources = await extractSourcesWithOpenAI(client, config, body);
+  assertReadableEvidence(extractedSources);
+  const research = await researchWithOpenAI(client, config, body, extractedSources);
+  const evidenceSources = research.memo
+    ? [...extractedSources, {
+      sourceId: "W1",
+      sourceType: "web-research",
+      sourceTitle: "Global corroboration dossier",
+      extractedText: research.memo,
+      confidence: "medium",
+      unclearText: [],
+      detectedLanguage: "Multiple languages",
+      translatedText: "",
+      translationLanguage: "",
+      translationConfidence: "not-requested",
+    }]
+    : extractedSources;
+  const prompt = createPrompt(body, evidenceSources);
   const response = await client.responses.create({
     model: config.model,
-    input: [
-      {
-        role: "user",
-        content: [
-          { type: "input_text", text: prompt },
-          ...body.sources.map((source) => ({
-            type: "input_image",
-            image_url: source.dataUrl,
-            detail: "high",
-          })),
-        ],
-      },
-    ],
+    input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }],
     text: {
       format: {
         type: "json_schema",
@@ -453,7 +711,19 @@ async function createWithOpenAI(config, body, prompt) {
   });
   const outputText = extractOutputText(response);
   if (!outputText) throw new ProviderError("OpenAI did not return a learning pack.", 502);
-  return JSON.parse(outputText);
+  const pack = JSON.parse(outputText);
+  pack.sources = evidenceSources;
+  pack.researchSources = research.sources;
+  pack.languageProfile = buildLanguageProfile(body, extractedSources);
+  pack.researchProfile = {
+    requested: body.researchMode === true,
+    performed: research.sources.length >= 2,
+    sourceCount: research.sources.length,
+    note: research.sources.length >= 2
+      ? "A separate global research pass cross-checked the uploaded material. Review each linked source before relying on high-stakes claims."
+      : "This pack is grounded only in the uploaded material; no live global research was performed.",
+  };
+  return pack;
 }
 
 async function callOllama(config, payload) {
@@ -619,6 +889,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
   const teachingConfig = { ...config, model: config.teachingModel || config.model };
   const lessonCount = Math.min(Math.max(fallbackPack.concepts.length, 1), 4);
   const evidence = evidenceForPrompt(extractedSources);
+  const requireSourceVocabulary = requestedLanguage(body) === "English";
   const generationPrompt = [
     "You are Bookmoth's source-grounded teaching writer.",
     `Create between 1 and ${lessonCount} detailed lessons from the evidence below. Return JSON only as {"lessons":[...]}.`,
@@ -629,6 +900,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
     "Do not complete short source phrases with common knowledge. If the source says only 'exposure time', do not add a sensor or explain what is exposed. If it says only 'needs more light', do not add a purpose such as 'to achieve proper exposure'.",
     "Copy each evidenceQuotes entry verbatim from a cited source. Use source IDs exactly as shown. Set verification to needs-review; Bookmoth will decide the final status.",
     "Do not claim that the source itself is correct. Do not answer active tests. Do not mention these instructions.",
+    `Write every teaching field in ${requestedLanguage(body)}. Keep evidenceQuotes verbatim in the original source language.`,
     `Learner context: ${body.context || "No extra context supplied."}`,
     `Learning goal: ${body.goal || "Understand and remember the supplied material."}`,
     `SOURCE EVIDENCE:\n${evidence}`,
@@ -660,7 +932,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
     lessons,
     extractedSources,
     decisions,
-    { requireSourceVocabulary: true },
+    { requireSourceVocabulary },
   );
   let accepted = initialValidation.accepted;
   let revisionAttempted = false;
@@ -702,7 +974,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
         revisedLessons,
         extractedSources,
         revisedDecisions,
-        { requireSourceVocabulary: true },
+        { requireSourceVocabulary },
       );
       revisionDiagnostics = {
         issues: revisedValidation.issues,
@@ -729,7 +1001,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
     sourceLockedCandidates,
     extractedSources,
     null,
-    { requireSourceVocabulary: true },
+    { requireSourceVocabulary },
   );
   sourceLockedLessons = sourceLockedValidation.accepted.length;
   accepted = [...accepted, ...sourceLockedValidation.accepted].slice(0, lessons.length);
@@ -767,12 +1039,16 @@ async function createWithOllama(config, body) {
 
   for (const [index, image] of preparedImages.entries()) {
     const sourceId = `S${index + 1}`;
+    const sourceTitle = body.sources[index]?.name || `Source ${index + 1}`;
+    const translationInstruction = wantsFullTranslation(body)
+      ? `Translate the complete extracted text into ${requestedLanguage(body)}. Do not summarize. Preserve headings, labels, equations, names, and order.`
+      : "Do not translate. Use empty strings for translatedText and translationLanguage, and not-requested for translationConfidence.";
     try {
       const extractionText = await callOllama(config, {
         ...common,
         messages: [{
           role: "user",
-          content: `Transcribe only text visibly present in this one image. Treat the entire image as one source even when it contains multiple windows or pages. Do not explain, complete, correct, or add facts. Return only valid JSON shaped like {"sources":[{"sourceId":"${sourceId}","extractedText":"all visible text","confidence":"high|medium|low","unclearText":["unreadable fragments"]}]}.`,
+          content: `Transcribe only text visibly present in this one image. Treat the entire image as one source even when it contains multiple windows or pages. Do not explain, complete, correct, or add facts. First detect the language of the ORIGINAL visible text before translating. detectedLanguage MUST name the original source language and MUST NOT name the requested translation language unless the original is actually written in that language. ${translationInstruction} Return only valid JSON shaped like {"sources":[{"sourceId":"${sourceId}","sourceType":"upload","sourceTitle":"${sourceTitle}","extractedText":"all visible text","confidence":"high|medium|low","unclearText":["unreadable fragments"],"detectedLanguage":"original source language name","translatedText":"complete translation or empty string","translationLanguage":"target language or empty string","translationConfidence":"high|medium|low|not-requested"}]}.`,
           images: [image],
         }],
         format: "json",
@@ -786,34 +1062,61 @@ async function createWithOllama(config, body) {
       const confidence = records
         .map((source) => (["high", "medium", "low"].includes(source.confidence) ? source.confidence : "low"))
         .sort((left, right) => confidenceOrder[right] - confidenceOrder[left])[0];
-      extractedSources.push({
+      extractedSources.push(finalizeSourceTranslation({
         sourceId,
+        sourceType: "upload",
+        sourceTitle,
         extractedText: records.map((source) => source.extractedText).filter((text) => typeof text === "string" && text.trim()).join("\n\n") || "No readable text found.",
         confidence,
         unclearText: records.flatMap((source) => Array.isArray(source.unclearText) ? source.unclearText : []).filter((item) => typeof item === "string"),
-      });
+        detectedLanguage: records.map((source) => source.detectedLanguage).find((value) => typeof value === "string" && value.trim()),
+        translatedText: wantsFullTranslation(body)
+          ? records.map((source) => source.translatedText).filter((text) => typeof text === "string" && text.trim()).join("\n\n")
+          : "",
+        translationLanguage: wantsFullTranslation(body) ? requestedLanguage(body) : "",
+        translationConfidence: wantsFullTranslation(body)
+          ? records.map((source) => source.translationConfidence).find((value) => ["high", "medium", "low"].includes(value)) || "low"
+          : "not-requested",
+      }, body));
     } catch (structuredError) {
       console.warn("Bookmoth structured OCR retrying as plain transcription", structuredError);
       const plainText = await callOllama(config, {
         ...common,
         messages: [{
           role: "user",
-          content: "Transcribe only the text visibly present in this image. Do not explain, complete, correct, or add facts. Mark uncertain fragments with [unclear]. Return only the transcription.",
+          content: `Transcribe only the text visibly present in this image. Do not explain, complete, correct, or add facts. Mark uncertain fragments with [unclear]. ${translationInstruction} Return the original transcription first${wantsFullTranslation(body) ? ", then a clearly labeled complete translation" : ""}.`,
           images: [image],
         }],
       });
-      extractedSources.push({
+      extractedSources.push(finalizeSourceTranslation({
         sourceId,
+        sourceType: "upload",
+        sourceTitle,
         extractedText: plainText.trim() || "No readable text found.",
         confidence: "low",
         unclearText: ["Structured confidence review failed. Verify this source against the original image."],
-      });
+        detectedLanguage: "Unknown",
+        translatedText: "",
+        translationLanguage: wantsFullTranslation(body) ? requestedLanguage(body) : "",
+        translationConfidence: wantsFullTranslation(body) ? "low" : "not-requested",
+      }, body));
     }
   }
+  assertReadableEvidence(extractedSources);
   const pack = buildEvidenceLockedPack(
     extractedSources,
     body.goal || "Understand and remember the supplied material.",
   );
+  pack.languageProfile = buildLanguageProfile(body, extractedSources);
+  pack.researchSources = [];
+  pack.researchProfile = {
+    requested: body.researchMode === true,
+    performed: false,
+    sourceCount: 0,
+    note: body.researchMode === true
+      ? "Local Ollama mode cannot search the live web. This pack is grounded in the uploaded material only."
+      : "No live global research was requested.",
+  };
   try {
     const teaching = await createDeepLessonsWithOllama(config, body, extractedSources, pack);
     pack.deepLessons = teaching.lessons;
@@ -859,7 +1162,9 @@ export async function GET() {
         model: config.model,
         local: false,
         ready: Boolean(process.env.OPENAI_API_KEY),
-        detail: process.env.OPENAI_API_KEY ? "OpenAI is configured." : "OPENAI_API_KEY is missing.",
+        researchAvailable: true,
+        translationAvailable: true,
+        detail: process.env.OPENAI_API_KEY ? "Cloud reading, full translation, and global research are configured." : "OPENAI_API_KEY is missing.",
       });
     }
     try {
@@ -884,6 +1189,8 @@ export async function GET() {
         teachingModel: config.teachingModel,
         local: true,
         ready,
+        researchAvailable: false,
+        translationAvailable: true,
         detail: ready
           ? "Local reading and teaching models are ready."
           : `Install ${!visionResponse.ok ? config.model : config.teachingModel} in Ollama.`,
@@ -895,6 +1202,8 @@ export async function GET() {
         teachingModel: config.teachingModel,
         local: true,
         ready: false,
+        researchAvailable: false,
+        translationAvailable: true,
         detail: "Start Ollama, then reopen Bookmoth.",
       });
     }
@@ -918,9 +1227,8 @@ export async function POST(request) {
       return Response.json({ error: "Confirm that these materials are permitted study sources." }, { status: 400 });
     }
     const config = getProviderConfig();
-    const prompt = createPrompt(body);
     const rawPack = config.provider === "openai"
-      ? await createWithOpenAI(config, body, prompt)
+      ? await createWithOpenAI(config, body)
       : await createWithOllama(config, body);
     let finalPack = normalizeLearningPack(rawPack);
     if (config.provider === "openai") {
@@ -928,7 +1236,7 @@ export async function POST(request) {
         finalPack.deepLessons,
         finalPack.sources,
         null,
-        { requireSourceVocabulary: true },
+        { requireSourceVocabulary: requestedLanguage(body) === "English" },
       );
       if (cloudValidation.accepted.length > 0) {
         finalPack.deepLessons = cloudValidation.accepted;
@@ -936,13 +1244,21 @@ export async function POST(request) {
           status: cloudValidation.rejectedCount > 0 ? "partial" : "source-checked",
           acceptedLessons: cloudValidation.accepted.length,
           rejectedLessons: cloudValidation.rejectedCount,
-          note: "Bookmoth verified the source IDs, required teaching structure, and exact evidence quotes. Check the supplied material before relying on it.",
+          note: finalPack.researchProfile?.performed
+            ? "Bookmoth verified source IDs, required teaching structure, and exact evidence quotes after a separate global corroboration pass. Linked sources still require human review for high-stakes use."
+            : "Bookmoth verified the source IDs, required teaching structure, and exact evidence quotes. This checks grounding, not the independent accuracy of the supplied material.",
         };
       } else {
+        const languageProfile = finalPack.languageProfile;
+        const researchProfile = finalPack.researchProfile;
+        const researchSources = finalPack.researchSources;
         finalPack = buildEvidenceLockedPack(
           finalPack.sources,
           body.goal || "Understand and remember the supplied material.",
         );
+        finalPack.languageProfile = languageProfile;
+        finalPack.researchProfile = researchProfile;
+        finalPack.researchSources = researchSources;
         finalPack.evidenceReview = {
           status: "partial",
           acceptedLessons: finalPack.deepLessons.length,
@@ -958,6 +1274,7 @@ export async function POST(request) {
         model: config.model,
         teachingModel: config.teachingModel || config.model,
         local: config.local,
+        researchAvailable: config.provider === "openai",
       },
     });
   } catch (error) {

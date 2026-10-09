@@ -544,7 +544,7 @@ class ProviderError extends Error {
   }
 }
 
-function getProviderConfig() {
+function getProviderConfig(request = null) {
   const provider = (process.env.BOOKMOTH_PROVIDER || (process.env.OPENAI_API_KEY ? "openai" : "ollama")).toLowerCase();
   if (!['ollama', 'openai'].includes(provider)) {
     throw new ProviderError("BOOKMOTH_PROVIDER must be either ollama or openai.", 503);
@@ -552,11 +552,16 @@ function getProviderConfig() {
   if (provider === "openai") {
     const baseURL = (process.env.OPENAI_BASE_URL || "").replace(/\/$/, "");
     const gateway = baseURL === "https://ai-gateway.vercel.sh/v1";
+    const requestOidcToken = request?.headers?.get?.("x-vercel-oidc-token") || "";
+    const apiKey = gateway
+      ? (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN || requestOidcToken)
+      : process.env.OPENAI_API_KEY;
     return {
       provider,
       model: process.env.OPENAI_MODEL || (gateway ? "openai/gpt-5-mini" : "gpt-5-mini"),
       baseURL: baseURL || undefined,
       gateway,
+      apiKey,
       local: false,
     };
   }
@@ -679,8 +684,7 @@ async function researchWithOpenAI(client, config, body, extractedSources) {
 }
 
 async function createWithOpenAI(config, body) {
-  const apiKey = process.env.OPENAI_API_KEY || (config.gateway ? process.env.VERCEL_OIDC_TOKEN : "");
-  if (!apiKey) {
+  if (!config.apiKey) {
     throw new ProviderError(
       config.gateway
         ? "Vercel AI Gateway is selected, but no OIDC or gateway credential is available."
@@ -688,7 +692,7 @@ async function createWithOpenAI(config, body) {
       503,
     );
   }
-  const client = new OpenAI({ apiKey, ...(config.baseURL ? { baseURL: config.baseURL } : {}) });
+  const client = new OpenAI({ apiKey: config.apiKey, ...(config.baseURL ? { baseURL: config.baseURL } : {}) });
   const extractedSources = await extractSourcesWithOpenAI(client, config, body);
   assertReadableEvidence(extractedSources);
   const research = await researchWithOpenAI(client, config, body, extractedSources);
@@ -1163,11 +1167,11 @@ async function createWithOllama(config, body) {
   return pack;
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const config = getProviderConfig();
+    const config = getProviderConfig(request);
     if (config.provider === "openai") {
-      const credentialAvailable = Boolean(process.env.OPENAI_API_KEY || (config.gateway && process.env.VERCEL_OIDC_TOKEN));
+      const credentialAvailable = Boolean(config.apiKey);
       return Response.json({
         provider: config.gateway ? "vercel-ai-gateway" : "openai",
         model: config.model,
@@ -1239,7 +1243,7 @@ export async function POST(request) {
     if (body.studyUseAccepted !== true) {
       return Response.json({ error: "Confirm that these materials are permitted study sources." }, { status: 400 });
     }
-    const config = getProviderConfig();
+    const config = getProviderConfig(request);
     const rawPack = config.provider === "openai"
       ? await createWithOpenAI(config, body)
       : await createWithOllama(config, body);

@@ -1,6 +1,6 @@
 # Bookmoth global evidence, translation, and deployment validation
 
-Date: 2026-10-08
+Date: 2026-10-08, updated 2026-10-09
 Branch: `main`
 
 ## Release scope
@@ -63,9 +63,12 @@ Input: `public/sample-camera-exposure.png`, a photo with almost no readable stud
 
 ## Provider and deployment limits
 
-- The OpenAI cloud path is implemented but was not exercised locally because no `OPENAI_API_KEY` is stored in this checkout.
-- Live global web research therefore remains unverified end to end until the production provider key is configured.
-- GitHub runs continuous integration for the repository. A Vercel project must still be connected to run the Next.js API publicly.
+- The public application is deployed at `https://bookmoth.vercel.app` in Vercel project `the-hive2/bookmoth`.
+- Vercel AI Gateway is configured with `openai/gpt-5-mini`. The deployed function received its Vercel OIDC token and successfully reached AI Gateway.
+- A real production generation request reached AI Gateway but was rejected with HTTP 403 and `customer_verification_required`. Vercel requires the team owner to add a valid payment card before the included monthly credits can service requests.
+- `AI_GATEWAY_CREDITS_READY=false` is set in Production, Preview, and Development until that account step is complete. The public status endpoint therefore reports `ready: false`, and the interface disables generation instead of accepting a request that cannot complete.
+- The repository is public and GitHub Actions runs continuous integration. Vercel CLI deployment works, but push-triggered Vercel deployment remains unavailable until the Vercel account adds a GitHub login connection and links `Helios56722/bookmoth`.
+- Live translation and global research are implemented but remain unverified end to end in production until AI Gateway activation is complete.
 - No AI system can guarantee absolute factual accuracy. Bookmoth reduces risk with source locking, exact evidence quotes, visible uncertainty, linked corroboration, and refusal when the input is too weak.
 
 ## Production release gate
@@ -73,8 +76,8 @@ Input: `public/sample-camera-exposure.png`, a photo with almost no readable stud
 Use `docs/DEPLOYMENT.md`. Do not call the public deployment complete until:
 
 1. GitHub Actions passes for the exact release commit.
-2. Vercel is connected to `Helios56722/bookmoth`.
-3. The server-only OpenAI environment variables are configured.
-4. `/api/create` reports OpenAI ready with research and translation available.
-5. A permitted real screenshot passes both full translation and global corroboration tests.
-6. At least two linked research sources are opened and checked by a person.
+2. The Vercel team activates AI Gateway credits and `AI_GATEWAY_CREDITS_READY` is changed to `true`.
+3. `/api/create` reports Vercel AI Gateway ready with research and translation available.
+4. A permitted real screenshot passes both full translation and global corroboration tests.
+5. At least two linked research sources are opened and checked by a person.
+6. The Vercel account adds a GitHub login connection and links `Helios56722/bookmoth` for automatic push deployments.

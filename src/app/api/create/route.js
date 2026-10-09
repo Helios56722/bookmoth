@@ -562,6 +562,7 @@ function getProviderConfig(request = null) {
       baseURL: baseURL || undefined,
       gateway,
       apiKey,
+      gatewayCreditsReady: !gateway || process.env.AI_GATEWAY_CREDITS_READY !== "false",
       local: false,
     };
   }
@@ -684,6 +685,13 @@ async function researchWithOpenAI(client, config, body, extractedSources) {
 }
 
 async function createWithOpenAI(config, body) {
+  if (config.gateway && !config.gatewayCreditsReady) {
+    throw new ProviderError(
+      "Bookmoth's public AI is awaiting owner activation of the Vercel AI Gateway free-credit tier.",
+      503,
+    );
+  }
+
   if (!config.apiKey) {
     throw new ProviderError(
       config.gateway
@@ -1172,16 +1180,19 @@ export async function GET(request) {
     const config = getProviderConfig(request);
     if (config.provider === "openai") {
       const credentialAvailable = Boolean(config.apiKey);
+      const ready = credentialAvailable && config.gatewayCreditsReady;
       return Response.json({
         provider: config.gateway ? "vercel-ai-gateway" : "openai",
         model: config.model,
         local: false,
-        ready: credentialAvailable,
+        ready,
         researchAvailable: true,
         translationAvailable: true,
-        detail: credentialAvailable
-          ? `${config.gateway ? "Vercel AI Gateway" : "OpenAI"} reading, full translation, and global research are configured.`
-          : (config.gateway ? "Vercel AI Gateway credentials are unavailable." : "OPENAI_API_KEY is missing."),
+        detail: config.gateway && !config.gatewayCreditsReady
+          ? "The public app is deployed. The owner must activate Vercel AI Gateway credits before live generation can run."
+          : credentialAvailable
+            ? `${config.gateway ? "Vercel AI Gateway" : "OpenAI"} reading, full translation, and global research are configured.`
+            : (config.gateway ? "Vercel AI Gateway credentials are unavailable." : "OPENAI_API_KEY is missing."),
       });
     }
     try {
@@ -1296,6 +1307,21 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Bookmoth learning pack error", error);
+
+    const gatewayErrorType = error?.error?.type || error?.type;
+    if (gatewayErrorType === "customer_verification_required") {
+      return Response.json(
+        { error: "Bookmoth's public AI is deployed, but its owner must activate Vercel AI Gateway credits before live generation can run." },
+        { status: 503 },
+      );
+    }
+    if (["insufficient_funds", "quota_for_entity_exceeded"].includes(gatewayErrorType)) {
+      return Response.json(
+        { error: "Bookmoth's public AI is temporarily unavailable because its Vercel AI Gateway balance or budget has been reached." },
+        { status: 503 },
+      );
+    }
+
     return Response.json(
       { error: error instanceof ProviderError ? error.message : "Bookmoth could not create this learning pack. Check the source images and try again." },
       { status: error instanceof ProviderError ? error.status : 500 },

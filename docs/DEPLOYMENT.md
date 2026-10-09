@@ -11,9 +11,13 @@ Bookmoth needs a server runtime because `/api/create` reads images, calls the co
    - `BOOKMOTH_PROVIDER` = `openai`
    - `OPENAI_BASE_URL` = `https://ai-gateway.vercel.sh/v1`
    - `OPENAI_MODEL` = `openai/gpt-5-mini`
-5. Deploy `main`.
+   - `AI_GATEWAY_CREDITS_READY` = `true` after the team has activated AI Gateway credits
+5. Open the team's AI Gateway page and activate the included free-credit tier. Vercel currently requires a valid payment card on the team before it will service requests, even when usage stays within the free monthly credit.
+6. Deploy `main`.
 
 Vercel supplies `VERCEL_OIDC_TOKEN` to deployments automatically, so Bookmoth does not need a provider key in the project. AI Gateway usage consumes the team's gateway credits. If a direct provider key is intentionally used later, keep it server-side and never place it in GitHub files, browser code, screenshots, build logs, or a variable beginning with `NEXT_PUBLIC_`.
+
+Keep `AI_GATEWAY_CREDITS_READY=false` until the team finishes gateway activation. The public interface will then report the real setup state and disable generation instead of accepting work that cannot complete.
 
 ## Release gate
 

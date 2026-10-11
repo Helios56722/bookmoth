@@ -50,6 +50,66 @@ function MothMark({ compact = false }) {
   );
 }
 
+function HowToDialog({ onClose, onStart }) {
+  const closeButton = useRef(null);
+  const dialog = useRef(null);
+
+  useEffect(() => {
+    closeButton.current?.focus();
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab") return;
+      const focusable = [...(dialog.current?.querySelectorAll("button, a[href], input, select, textarea, [tabindex]:not([tabindex='-1'])") || [])]
+        .filter((element) => !element.disabled && element.getAttribute("aria-hidden") !== "true");
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.classList.add("dialog-open");
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.classList.remove("dialog-open");
+    };
+  }, [onClose]);
+
+  return (
+    <div className="howto-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section ref={dialog} className="howto-dialog" role="dialog" aria-modal="true" aria-labelledby="howto-title">
+        <div className="howto-header">
+          <div><p>Bookmoth field guide</p><h2 id="howto-title">From clear images to a checked learning pack.</h2></div>
+          <button ref={closeButton} className="dialog-close" type="button" onClick={onClose} aria-label="Close how-to guide">×</button>
+        </div>
+
+        <ol className="howto-steps">
+          <li><b>1</b><div><h3>Add clear source images</h3><p>Upload one to eight screenshots or photos. Fill the frame, avoid glare, and keep every word readable.</p></div></li>
+          <li><b>2</b><div><h3>Describe the lesson and your goal</h3><p>Tell Bookmoth the topic and what you need to understand, remember, compare, or practice. These details guide the teaching without replacing the source.</p></div></li>
+          <li><b>3</b><div><h3>Choose language and evidence settings</h3><p>Select the output language. Request a full translation when needed, and use global research when you want independent corroboration.</p></div></li>
+          <li><b>4</b><div><h3>Create, then check the evidence first</h3><p>Open Source check before studying. Review the transcription, translation, uncertainty labels, and linked research beside the original material.</p></div></li>
+          <li><b>5</b><div><h3>Study in the format that fits</h3><p>Use the detailed guide, Lantern trail, report, practice set, or visual board. Export Markdown or JSON when you want to keep the result.</p></div></li>
+        </ol>
+
+        <div className="howto-notes">
+          <article><span>Better input</span><p>Use close, straight, well-lit images that show the full question, heading, labels, and instructions.</p></article>
+          <article><span>Honest limits</span><p>Bookmoth refuses weak evidence and marks uncertainty. Always compare important claims with the original source.</p></article>
+        </div>
+
+        <div className="howto-actions">
+          <button className="button" type="button" onClick={onClose}>Keep reading</button>
+          <button className="button primary" type="button" onClick={onStart}>Start a learning pack</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function SourcePills({ ids }) {
   return (
     <span className="source-pills" aria-label={`Sources ${ids.join(", ") || "not assigned"}`}>
@@ -176,6 +236,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [dragging, setDragging] = useState(false);
   const [providerStatus, setProviderStatus] = useState(null);
+  const [howToOpen, setHowToOpen] = useState(false);
   const fileInput = useRef(null);
   const cameraInput = useRef(null);
 
@@ -354,11 +415,13 @@ export default function Home() {
         </a>
         <nav aria-label="Main navigation">
           <a href="#workspace">Create</a>
-          <a href="#how-it-works">How it works</a>
+          <button type="button" onClick={() => setHowToOpen(true)} aria-haspopup="dialog">How to use</button>
           <a href="#open-source">Open source</a>
         </nav>
-        <a className="header-link" href="https://github.com/Helios56722/bookmoth" target="_blank" rel="noreferrer">GitHub ↗</a>
+        <div className="header-actions"><button className="header-help" type="button" onClick={() => setHowToOpen(true)} aria-haspopup="dialog">How to use</button><a className="header-link" href="https://github.com/Helios56722/bookmoth" target="_blank" rel="noreferrer">GitHub ↗</a></div>
       </header>
+
+      {howToOpen && <HowToDialog onClose={() => setHowToOpen(false)} onStart={() => { setHowToOpen(false); document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" }); }} />}
 
       <section className="hero">
         <div className="hero-copy">
@@ -367,6 +430,7 @@ export default function Home() {
           <p className="lede">Turn screenshots of notes, lessons, tutorials, and permitted coursework into a study guide, a report, practice material, or a visual collage.</p>
           <div className="hero-actions">
             <a className="button primary" href="#workspace">Build a learning pack</a>
+            <button className="button ghost" type="button" onClick={() => setHowToOpen(true)}>How to use Bookmoth</button>
             <button className="button ghost" type="button" onClick={loadSample}>Explore a sample</button>
           </div>
           <ul className="trust-row" aria-label="Product principles">
@@ -386,9 +450,16 @@ export default function Home() {
           <button className="text-button" type="button" onClick={resetWorkspace}>Clear workspace</button>
         </div>
 
+        <ol className="quick-start" aria-label="Quick-start sequence">
+          <li><b>1</b><span><strong>Add</strong><small>Clear screenshots or photos</small></span></li>
+          <li><b>2</b><span><strong>Focus</strong><small>Topic, goal, and language</small></span></li>
+          <li><b>3</b><span><strong>Check</strong><small>Original text and evidence</small></span></li>
+          <li><b>4</b><span><strong>Study</strong><small>Guide, practice, or export</small></span></li>
+        </ol>
+
         <div className="workspace-grid">
           <aside className="source-panel">
-            <div className="step-label"><b>01</b><span>Add what you are learning</span></div>
+            <div className="step-label"><b>01</b><span>Add clear source images</span></div>
             <button
               className={`drop-zone ${dragging ? "dragging" : ""}`}
               type="button"
@@ -398,11 +469,11 @@ export default function Home() {
               onDrop={(event) => { event.preventDefault(); setDragging(false); addFiles(event.dataTransfer.files); }}
             >
               <span className="drop-icon">+</span>
-              <strong>Drop screenshots here</strong>
+              <strong>Choose screenshots or drag them here</strong>
               <small>PNG, JPG, or WebP · up to 8 images · 18 MB total</small>
             </button>
             <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={(event) => addFiles(event.target.files)} />
-            <button className="button full" type="button" onClick={() => cameraInput.current?.click()}>Take a photo on this device</button>
+            <button className="button full" type="button" onClick={() => cameraInput.current?.click()}>Use this device&apos;s camera</button>
             <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(event) => addFiles(event.target.files)} />
 
             <div className="capture-guide" aria-label="Photo checklist">
@@ -428,6 +499,7 @@ export default function Home() {
 
             <label>Topic or context<textarea value={context} onChange={(event) => setContext(event.target.value)} placeholder="Example: beginner woodworking notes about safe joinery" /></label>
             <label>What do you want to learn?<textarea value={goal} onChange={(event) => setGoal(event.target.value)} placeholder="Example: understand the steps and remember the tool names" /></label>
+            <p className="field-guidance">Topic and goal are optional, but specific details produce a more useful learning pack.</p>
             <label>Original link <span>(optional)</span><input type="url" value={referenceUrl} onChange={(event) => setReferenceUrl(event.target.value)} placeholder="https://…" /></label>
 
             <fieldset className="evidence-controls">
@@ -490,6 +562,7 @@ export default function Home() {
                   </div>
                   <div className="verification-ledger" aria-label="Verification summary">
                     <div><span>Source grounding</span><b>{pack.evidenceReview.status === "source-checked" ? "Passed" : "Limited"}</b></div>
+                    <div><span>Consistency audit</span><b>{pack.consistencyReview?.status === "passed" ? "Passed" : "Review needed"}</b></div>
                     <div><span>Global research</span><b>{pack.researchProfile?.performed ? `${pack.researchProfile.sourceCount} linked sources` : "Not performed"}</b></div>
                     <div><span>Output language</span><b>{pack.languageProfile?.outputLanguage || "English"}</b></div>
                     <div><span>Full translation</span><b>{pack.languageProfile?.fullSourceTranslation ? "Included" : "Not requested"}</b></div>
@@ -504,7 +577,7 @@ export default function Home() {
                   {activeTab === "report" && <div className="content-stack"><h4>Structured report</h4>{pack.reportSections.map((item, index) => <article className="report-section" key={`${item.heading}-${index}`}><div><h5>{item.heading}</h5><SourcePills ids={item.sourceIds} /></div><p>{item.body}</p></article>)}</div>}
                   {activeTab === "practice" && <div className="content-stack"><h4>Flashcards</h4><div className="flashcard-grid">{pack.flashcards.map((item, index) => <details key={`${item.front}-${index}`}><summary>{item.front}</summary><p>{item.back}</p><SourcePills ids={item.sourceIds} /></details>)}</div><h4>Practice questions</h4>{pack.practice.map((item, index) => <details className="practice-item" key={`${item.question}-${index}`}><summary><span>{index + 1}</span>{item.question}</summary><p><b>Hint:</b> {item.hint}</p><p><b>Answer:</b> {item.answer}</p><SourcePills ids={item.sourceIds} /></details>)}</div>}
                   {activeTab === "collage" && <div className="content-stack"><div className="collage-heading"><div><h4>{pack.collage.title}</h4><p>{pack.collage.caption}</p></div><button type="button" onClick={exportCollage}>Download PNG ↓</button></div><div className="collage-board"><section className="collage-sources" aria-label="Source material"><p>Source material · {sources.length} {sources.length === 1 ? "item" : "items"}</p><div className="collage-grid">{sources.map((source, index) => <figure key={source.id}><NextImage src={source.dataUrl} alt={`Source S${index + 1}: ${source.name}`} width={800} height={600} unoptimized /><figcaption><b>S{index + 1}</b><span>{source.name}</span></figcaption></figure>)}</div></section><aside className="collage-review"><h5>Quick review</h5><p>Explain each point in your own words, then check it against the source.</p><ul className="callout-list">{pack.collage.callouts.map((item, index) => <li key={`${item.text}-${index}`}><SourcePills ids={item.sourceIds} /><span>{item.text}</span></li>)}</ul></aside></div></div>}
-                  {activeTab === "sources" && <div className="content-stack source-check-view"><h4>Source, translation, and research check</h4><p className="helper-copy">Low confidence and unclear text are review prompts. Machine translation and web corroboration improve coverage, but neither replaces the original source or qualified review.</p><section className={`research-summary ${pack.researchProfile?.performed ? "performed" : "source-only"}`}><div><span aria-hidden="true">{pack.researchProfile?.performed ? "✓" : "i"}</span><div><b>{pack.researchProfile?.performed ? "Global corroboration completed" : "Source-only pack"}</b><p>{pack.researchProfile?.note}</p></div></div>{pack.researchSources?.length > 0 && <div className="research-source-list">{pack.researchSources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.id}><span>{source.id}</span><div><b>{source.title}</b><small>{source.publisher} · {source.language}</small></div><em>Open ↗</em></a>)}</div>}</section>{pack.sources.map((source, index) => <article className="source-extract" key={`${source.sourceId}-${index}`}><div><div><h5>{source.sourceId} · {source.sourceTitle}</h5><small>{source.sourceType === "web-research" ? "Corroboration evidence" : `Detected language: ${source.detectedLanguage}`}</small></div><span className={`confidence ${source.confidence}`}>{source.confidence} confidence</span></div><section><b>Original extracted text</b><p>{source.extractedText}</p></section>{source.translatedText && <section className="translation-block"><div><b>Full {source.translationLanguage} translation</b><span className={`confidence ${source.translationConfidence}`}>{source.translationConfidence} confidence</span></div><p>{source.translatedText}</p><small>Machine translation: verify names, formulas, quotations, and technical terms against the original.</small></section>}{source.unclearText.length > 0 && <div className="unclear"><b>Unclear in the image</b>{source.unclearText.map((item, itemIndex) => <span key={`${item}-${itemIndex}`}>{item}</span>)}</div>}</article>)}{pack.cautions.length > 0 && <div className="caution-box"><b>Check before relying on this</b>{pack.cautions.map((item, index) => <p key={`${item}-${index}`}>{item}</p>)}</div>}</div>}
+                  {activeTab === "sources" && <div className="content-stack source-check-view"><h4>Source, translation, and research check</h4><p className="helper-copy">Low confidence and unclear text are review prompts. Machine translation and web corroboration improve coverage, but neither replaces the original source or qualified review.</p><section className={`research-summary ${pack.researchProfile?.performed ? "performed" : "source-only"}`}><div><span aria-hidden="true">{pack.researchProfile?.performed ? "✓" : "i"}</span><div><b>{pack.researchProfile?.performed ? "Global corroboration completed" : "Source-only pack"}</b><p>{pack.researchProfile?.note}</p></div></div>{pack.researchSources?.length > 0 && <div className="research-source-list">{pack.researchSources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.id}><span>{source.id}</span><div><b>{source.title}</b><small>{source.publisher} · {source.language}</small></div><em>Open ↗</em></a>)}</div>}</section><section className={`consistency-summary ${pack.consistencyReview?.status === "passed" ? "passed" : "needs-review"}`}><span aria-hidden="true">{pack.consistencyReview?.status === "passed" ? "✓" : "!"}</span><div><b>{pack.consistencyReview?.status === "passed" ? "Internal consistency checks passed" : "Consistency review needed"}</b><p>{pack.consistencyReview?.note}</p>{pack.consistencyReview?.invalidSourceIds?.length > 0 && <small>Unknown source IDs: {pack.consistencyReview.invalidSourceIds.join(", ")}</small>}</div></section>{pack.sources.map((source, index) => <article className="source-extract" key={`${source.sourceId}-${index}`}><div><div><h5>{source.sourceId} · {source.sourceTitle}</h5><small>{source.sourceType === "web-research" ? "Corroboration evidence" : `Detected language: ${source.detectedLanguage}`}</small></div><span className={`confidence ${source.confidence}`}>{source.confidence} confidence</span></div><section><b>Original extracted text</b><p>{source.extractedText}</p></section>{source.translatedText && <section className="translation-block"><div><b>Full {source.translationLanguage} translation</b><span className={`confidence ${source.translationConfidence}`}>{source.translationConfidence} confidence</span></div><p>{source.translatedText}</p><small>Machine translation: verify names, formulas, quotations, and technical terms against the original.</small></section>}{source.unclearText.length > 0 && <div className="unclear"><b>Unclear in the image</b>{source.unclearText.map((item, itemIndex) => <span key={`${item}-${itemIndex}`}>{item}</span>)}</div>}</article>)}{pack.cautions.length > 0 && <div className="caution-box"><b>Check before relying on this</b>{pack.cautions.map((item, index) => <p key={`${item}-${index}`}>{item}</p>)}</div>}</div>}
                 </div>
               </>
             )}

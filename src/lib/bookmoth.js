@@ -36,14 +36,15 @@ export function normalizeLearningPack(value = {}) {
   const safeArray = (input) => (Array.isArray(input) ? input : []);
   const safeString = (input, fallback = "") =>
     typeof input === "string" && input.trim() ? input.trim() : fallback;
+  const safeLabel = (input, fallback = "") => safeString(input, fallback).replace(/\s+/g, " ");
 
   return {
-    title: safeString(value.title, "Untitled learning pack"),
+    title: safeLabel(value.title, "Untitled learning pack"),
     overview: safeString(value.overview, "No overview was generated."),
     sources: safeArray(value.sources).map((source, index) => ({
       sourceId: safeString(source?.sourceId, `S${index + 1}`),
       sourceType: ["upload", "web-research"].includes(source?.sourceType) ? source.sourceType : "upload",
-      sourceTitle: safeString(source?.sourceTitle, `Source ${index + 1}`),
+      sourceTitle: safeLabel(source?.sourceTitle, `Source ${index + 1}`),
       extractedText: safeString(source?.extractedText, "No readable text found."),
       confidence: ["high", "medium", "low"].includes(source?.confidence)
         ? source.confidence
@@ -68,9 +69,24 @@ export function normalizeLearningPack(value = {}) {
       sourceCount: Number.isInteger(value.researchProfile?.sourceCount) ? value.researchProfile.sourceCount : 0,
       note: safeString(value.researchProfile?.note, "No live global research was performed."),
     },
+    consistencyReview: {
+      status: ["passed", "needs-review"].includes(value.consistencyReview?.status)
+        ? value.consistencyReview.status
+        : "needs-review",
+      checks: {
+        uniqueSourceIds: value.consistencyReview?.checks?.uniqueSourceIds === true,
+        referencesValid: value.consistencyReview?.checks?.referencesValid === true,
+        lessonEvidencePresent: value.consistencyReview?.checks?.lessonEvidencePresent === true,
+        reviewCountsMatch: value.consistencyReview?.checks?.reviewCountsMatch === true,
+        researchCountMatches: value.consistencyReview?.checks?.researchCountMatches === true,
+        requestedTranslationsPresent: value.consistencyReview?.checks?.requestedTranslationsPresent === true,
+      },
+      invalidSourceIds: safeArray(value.consistencyReview?.invalidSourceIds).map((item) => safeString(item)).filter(Boolean),
+      note: safeString(value.consistencyReview?.note, "Bookmoth has not completed its deterministic consistency audit."),
+    },
     researchSources: safeArray(value.researchSources).map((source, index) => ({
       id: safeString(source?.id, `R${index + 1}`),
-      title: safeString(source?.title, "Web source"),
+      title: safeLabel(source?.title, "Web source"),
       url: safeString(source?.url),
       publisher: safeString(source?.publisher, "Unknown publisher"),
       language: safeString(source?.language, "Original publication language"),
@@ -78,7 +94,7 @@ export function normalizeLearningPack(value = {}) {
       whyUsed: safeString(source?.whyUsed, "Used in the global corroboration pass."),
     })).filter((source) => /^https?:\/\//i.test(source.url)),
     concepts: safeArray(value.concepts).map((concept) => ({
-      term: safeString(concept?.term, "Concept"),
+      term: safeLabel(concept?.term, "Concept"),
       explanation: safeString(concept?.explanation, "Explanation unavailable."),
       sourceIds: safeArray(concept?.sourceIds).map((item) => safeString(item)).filter(Boolean),
     })),
@@ -87,12 +103,12 @@ export function normalizeLearningPack(value = {}) {
       "Each lesson separates the direct source answer from the explanation, practice, and evidence used to support it.",
     ),
     deepLessons: safeArray(value.deepLessons).map((lesson, lessonIndex) => ({
-      term: safeString(lesson?.term, `Lesson ${lessonIndex + 1}`),
+      term: safeLabel(lesson?.term, `Lesson ${lessonIndex + 1}`),
       learningObjective: safeString(lesson?.learningObjective, "Explain this idea using the supplied source."),
       directAnswer: safeString(lesson?.directAnswer, "The source does not provide a direct answer."),
       explanation: safeString(lesson?.explanation, "The source does not provide enough detail for a reliable explanation."),
       steps: safeArray(lesson?.steps).map((step, stepIndex) => ({
-        title: safeString(step?.title, `Step ${stepIndex + 1}`),
+        title: safeLabel(step?.title, `Step ${stepIndex + 1}`),
         explanation: safeString(step?.explanation, "Review the cited source statement."),
       })),
       whyItMatters: safeString(lesson?.whyItMatters, "This point supports the learner's stated goal."),
@@ -130,7 +146,7 @@ export function normalizeLearningPack(value = {}) {
     trailMap: {
       glowPoints: safeArray(value.trailMap?.glowPoints).map((point, index) => ({
         id: safeString(point?.id, `G${index + 1}`),
-        label: safeString(point?.label, "Key idea"),
+        label: safeLabel(point?.label, "Key idea"),
         whyItMatters: safeString(point?.whyItMatters, "Review this idea in its source context."),
         sourceIds: safeArray(point?.sourceIds).map((item) => safeString(item)).filter(Boolean),
       })),
@@ -147,7 +163,7 @@ export function normalizeLearningPack(value = {}) {
       recallLoop: safeArray(value.trailMap?.recallLoop).map((step) => safeString(step)).filter(Boolean),
     },
     reportSections: safeArray(value.reportSections).map((section) => ({
-      heading: safeString(section?.heading, "Finding"),
+      heading: safeLabel(section?.heading, "Finding"),
       body: safeString(section?.body, "No details generated."),
       sourceIds: safeArray(section?.sourceIds).map((item) => safeString(item)).filter(Boolean),
     })),
@@ -163,7 +179,7 @@ export function normalizeLearningPack(value = {}) {
       sourceIds: safeArray(item?.sourceIds).map((sourceId) => safeString(sourceId)).filter(Boolean),
     })),
     collage: {
-      title: safeString(value.collage?.title, "Visual review board"),
+      title: safeLabel(value.collage?.title, "Visual review board"),
       caption: safeString(value.collage?.caption, "A visual index of your source material."),
       callouts: safeArray(value.collage?.callouts).map((callout) => ({
         text: safeString(callout?.text, "Review this source."),
@@ -172,6 +188,56 @@ export function normalizeLearningPack(value = {}) {
     },
     reviewPlan: safeArray(value.reviewPlan).map((item) => safeString(item)).filter(Boolean),
     cautions: safeArray(value.cautions).map((item) => safeString(item)).filter(Boolean),
+  };
+}
+
+export function auditLearningPackConsistency(value = {}) {
+  const pack = normalizeLearningPack(value);
+  const sourceIds = pack.sources.map((source) => source.sourceId).filter(Boolean);
+  const sourceIdSet = new Set(sourceIds);
+  const referencedSourceIds = [
+    ...pack.concepts.flatMap((item) => item.sourceIds),
+    ...pack.deepLessons.flatMap((item) => item.sourceIds),
+    ...pack.reportSections.flatMap((item) => item.sourceIds),
+    ...pack.flashcards.flatMap((item) => item.sourceIds),
+    ...pack.practice.flatMap((item) => item.sourceIds),
+    ...pack.collage.callouts.flatMap((item) => item.sourceIds),
+    ...pack.trailMap.glowPoints.flatMap((item) => item.sourceIds),
+    ...pack.trailMap.blindSpots.flatMap((item) => item.sourceIds),
+  ].filter(Boolean);
+  const invalidSourceIds = [...new Set(referencedSourceIds.filter((sourceId) => !sourceIdSet.has(sourceId)))];
+  const acceptedLessonCount = pack.deepLessons.filter((lesson) => lesson.verification === "source-checked").length;
+  const outputLanguage = pack.languageProfile.outputLanguage.toLowerCase();
+  const requestedTranslationsPresent = !pack.languageProfile.fullSourceTranslation
+    || pack.sources
+      .filter((source) => source.sourceType === "upload")
+      .every((source) => {
+        const detectedLanguage = source.detectedLanguage.toLowerCase();
+        const alreadyInOutputLanguage = detectedLanguage.includes(outputLanguage)
+          || outputLanguage.includes(detectedLanguage);
+        return alreadyInOutputLanguage || Boolean(source.translatedText && source.translationLanguage);
+      });
+  const checks = {
+    uniqueSourceIds: sourceIds.length > 0 && sourceIdSet.size === sourceIds.length,
+    referencesValid: referencedSourceIds.length > 0 && invalidSourceIds.length === 0,
+    lessonEvidencePresent: pack.deepLessons.length > 0 && pack.deepLessons.every((lesson) => (
+      lesson.sourceIds.length > 0 && lesson.evidenceQuotes.length > 0
+    )),
+    reviewCountsMatch: pack.evidenceReview.acceptedLessons === acceptedLessonCount
+      && pack.evidenceReview.rejectedLessons >= 0,
+    researchCountMatches: !pack.researchProfile.performed
+      || (pack.researchSources.length >= 2 && pack.researchProfile.sourceCount === pack.researchSources.length),
+    requestedTranslationsPresent,
+  };
+  const passed = Object.values(checks).every(Boolean);
+
+  return {
+    status: passed ? "passed" : "needs-review",
+    checks,
+    invalidSourceIds,
+    note: passed
+      ? "Source IDs, lesson evidence, review counts, research totals, and requested translations agree across this pack."
+      : "One or more pack-wide checks did not agree. Review the Source check tab before relying on this material.",
   };
 }
 
@@ -191,16 +257,19 @@ function looksLikeHeading(line = "", lineCount = 0) {
 }
 
 function exactLabel(line = "", index = 0) {
-  const colonIndex = line.indexOf(":");
-  if (colonIndex > 0 && colonIndex <= 48) return line.slice(0, colonIndex).trim();
+  const lines = sourceLines(line);
+  if (lines.length > 1 && looksLikeHeading(lines[0], lines.length)) return lines[0];
+  const compactLine = line.replace(/\s+/g, " ").trim();
+  const colonIndex = compactLine.indexOf(":");
+  if (colonIndex > 0 && colonIndex <= 48) return compactLine.slice(0, colonIndex).trim();
 
-  const subject = line.match(
+  const subject = compactLine.match(
     /^(.{2,55}?)\s+(?:is|are|was|were|uses?|produces?|converts?|captures?|contains?|includes?|requires?|means?|refers?\s+to)\b/i,
   )?.[1]?.trim();
   if (subject) return subject;
 
-  const words = line.split(/\s+/).filter(Boolean);
-  if (words.length > 0 && words.length <= 5) return line.replace(/[.!?]+$/, "");
+  const words = compactLine.split(/\s+/).filter(Boolean);
+  if (words.length > 0 && words.length <= 5) return compactLine.replace(/[.!?]+$/, "");
   return `Source point ${index + 1}`;
 }
 
@@ -347,9 +416,14 @@ export function buildSourceLockedDeepLesson(lesson = {}, sources = []) {
   if (sourceIds.length === 0 || quotes.length === 0) return null;
 
   const requestedTerm = typeof lesson.term === "string" ? lesson.term.trim() : "";
+  const compactRequestedTerm = requestedTerm.replace(/\s+/g, " ");
   const sourceText = sourceIds.map((sourceId) => sourceMap.get(sourceId)?.normalized || "").join(" ");
-  const term = requestedTerm && sourceText.includes(normalizedEvidenceText(requestedTerm))
-    ? requestedTerm
+  const requestedTermIsUsable = requestedTerm
+    && !/[\r\n]/.test(requestedTerm)
+    && compactRequestedTerm.length <= 72
+    && compactRequestedTerm.split(/\s+/).length <= 8;
+  const term = requestedTermIsUsable && sourceText.includes(normalizedEvidenceText(requestedTerm))
+    ? compactRequestedTerm
     : exactLabel(quotes[0], 0);
   const evidenceAnswer = quotes.join(" ");
   const statementSummary = quotes.map((quote, index) =>

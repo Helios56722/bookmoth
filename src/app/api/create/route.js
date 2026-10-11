@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { Buffer } from "node:buffer";
 import { franc } from "franc-min";
 import {
+  auditLearningPackConsistency,
   buildEvidenceLockedPack,
   buildSourceLockedDeepLesson,
   normalizeLearningPack,
@@ -1295,8 +1296,10 @@ export async function POST(request) {
         };
       }
     }
+    finalPack = normalizeLearningPack(finalPack);
+    finalPack.consistencyReview = auditLearningPackConsistency(finalPack);
     return Response.json({
-      pack: normalizeLearningPack(finalPack),
+      pack: finalPack,
       provider: {
         name: config.provider,
         model: config.model,

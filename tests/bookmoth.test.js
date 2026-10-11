@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  auditLearningPackConsistency,
   buildEvidenceLockedPack,
   buildSourceLockedDeepLesson,
   findUnsupportedLessonVocabulary,
@@ -19,6 +20,17 @@ test("source validation accepts a valid PNG data URL", () => {
   assert.equal(validateSources([{ type: "image/png", dataUrl: "data:image/png;base64,AAAA" }]), null);
 });
 
+test("source validation rejects mismatched image metadata and unsafe content", () => {
+  assert.equal(
+    validateSources([{ type: "image/png", dataUrl: "data:image/jpeg;base64,AAAA" }]),
+    "One or more image files could not be read safely.",
+  );
+  assert.equal(
+    validateSources([{ type: "image/svg+xml", dataUrl: "data:image/svg+xml;base64,AAAA" }]),
+    "Bookmoth accepts PNG, JPG, and WebP images.",
+  );
+});
+
 test("normalization preserves source links and fills safe defaults", () => {
   const pack = normalizeLearningPack({
     title: "Joinery",
@@ -27,6 +39,19 @@ test("normalization preserves source links and fills safe defaults", () => {
   assert.equal(pack.title, "Joinery");
   assert.deepEqual(pack.concepts[0].sourceIds, ["S1"]);
   assert.deepEqual(pack.practice, []);
+});
+
+test("normalization keeps evidence formatting while cleaning display labels", () => {
+  const pack = normalizeLearningPack({
+    title: "Manual\n  exposure",
+    sources: [{ sourceTitle: "Class\n notes", extractedText: "Aperture\nWider: more light." }],
+    deepLessons: [{ term: "Aperture\nLens opening\nWider", evidenceQuotes: ["Aperture\nWider: more light."] }],
+  });
+  assert.equal(pack.title, "Manual exposure");
+  assert.equal(pack.sources[0].sourceTitle, "Class notes");
+  assert.equal(pack.deepLessons[0].term, "Aperture Lens opening Wider");
+  assert.equal(pack.sources[0].extractedText, "Aperture\nWider: more light.");
+  assert.equal(pack.deepLessons[0].evidenceQuotes[0], "Aperture\nWider: more light.");
 });
 
 test("normalization preserves complete translations and traceable research links", () => {
@@ -62,6 +87,16 @@ test("normalization preserves complete translations and traceable research links
   assert.match(markdown, /\[Primary source\]\(https:\/\/example\.edu\/source\)/);
 });
 
+test("normalization drops non-web research links", () => {
+  const pack = normalizeLearningPack({
+    researchSources: [
+      { id: "R1", title: "Trusted", url: "https://example.edu/source" },
+      { id: "R2", title: "Unsafe", url: "javascript:alert(1)" },
+    ],
+  });
+  assert.deepEqual(pack.researchSources.map((source) => source.id), ["R1"]);
+});
+
 test("sample pack contains all public output types", () => {
   const pack = sampleLearningPack();
   assert.ok(pack.concepts.length > 0);
@@ -84,6 +119,20 @@ test("sample pack contains all public output types", () => {
   assert.ok(pack.trailMap.threads.every((thread) => thread.fromId && thread.toId));
   assert.ok(pack.trailMap.blindSpots.length > 0);
   assert.ok(pack.trailMap.recallLoop.length > 0);
+  assert.equal(auditLearningPackConsistency(pack).status, "passed");
+});
+
+test("pack-wide consistency audit catches broken citations and research totals", () => {
+  const pack = sampleLearningPack();
+  pack.deepLessons[0].sourceIds = ["S404"];
+  pack.researchProfile = { requested: true, performed: true, sourceCount: 3, note: "Cross-checked." };
+  pack.researchSources = [{ id: "R1", title: "One source", url: "https://example.edu/one" }];
+
+  const audit = auditLearningPackConsistency(pack);
+  assert.equal(audit.status, "needs-review");
+  assert.deepEqual(audit.invalidSourceIds, ["S404"]);
+  assert.equal(audit.checks.referencesValid, false);
+  assert.equal(audit.checks.researchCountMatches, false);
 });
 
 test("markdown export includes verification language and citations", () => {
@@ -207,6 +256,13 @@ test("source-lock recovery keeps detailed structure without unsupported subject 
     null,
     { requireSourceVocabulary: true },
   ).accepted.length, 1);
+
+  const multiline = buildSourceLockedDeepLesson({
+    term: "Aperture\nLens opening\nWider",
+    sourceIds: ["S1"],
+    evidenceQuotes: ["Aperture\nWider: more light, shallower depth."],
+  }, sources);
+  assert.equal(multiline.term, "Aperture");
 
   const unsafe = {
     ...locked,

@@ -999,7 +999,7 @@ export function sampleLearningPack() {
     .map((lesson) => buildSourceLockedDeepLesson(lesson, sources))
     .filter(Boolean);
 
-  return normalizeLearningPack({
+  const sample = normalizeLearningPack({
     ...base,
     title: "Manual exposure: an evidence-locked review",
     overview: "This sample turns three pairs of statements from the photography source into structured lessons. Factual answers keep the source wording visible instead of filling gaps with outside information.",
@@ -1028,4 +1028,6 @@ export function sampleLearningPack() {
       "This sample demonstrates source-grounded teaching. Verify the original material before relying on it for a high-stakes decision.",
     ],
   });
+  sample.consistencyReview = auditLearningPackConsistency(sample);
+  return sample;
 }

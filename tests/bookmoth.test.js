@@ -119,6 +119,7 @@ test("sample pack contains all public output types", () => {
   assert.ok(pack.trailMap.threads.every((thread) => thread.fromId && thread.toId));
   assert.ok(pack.trailMap.blindSpots.length > 0);
   assert.ok(pack.trailMap.recallLoop.length > 0);
+  assert.equal(pack.consistencyReview.status, "passed");
   assert.equal(auditLearningPackConsistency(pack).status, "passed");
 });
 

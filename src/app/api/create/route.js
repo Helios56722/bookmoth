@@ -549,9 +549,26 @@ class ProviderError extends Error {
 }
 
 function getProviderConfig(request = null) {
-  const provider = (process.env.BOOKMOTH_PROVIDER || (process.env.OPENAI_API_KEY ? "openai" : "ollama")).toLowerCase();
-  if (!['ollama', 'openai'].includes(provider)) {
-    throw new ProviderError("BOOKMOTH_PROVIDER must be either ollama or openai.", 503);
+  const requestOpenRouterKey = request?.headers?.get?.("x-bookmoth-openrouter-key")?.trim() || "";
+  const provider = (
+    requestOpenRouterKey
+      ? "openrouter"
+      : process.env.BOOKMOTH_PROVIDER || (process.env.OPENROUTER_API_KEY ? "openrouter" : process.env.OPENAI_API_KEY ? "openai" : "ollama")
+  ).toLowerCase();
+  if (!["ollama", "openai", "openrouter"].includes(provider)) {
+    throw new ProviderError("BOOKMOTH_PROVIDER must be ollama, openai, or openrouter.", 503);
+  }
+  if (provider === "openrouter") {
+    const serverApiKey = process.env.OPENROUTER_API_KEY?.trim() || "";
+    return {
+      provider,
+      model: process.env.OPENROUTER_MODEL || "dots-studio/dots-3-note-preview:free",
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: requestOpenRouterKey || serverApiKey,
+      userKeyRequired: !serverApiKey,
+      userSuppliedKey: Boolean(requestOpenRouterKey),
+      local: false,
+    };
   }
   if (provider === "openai") {
     const baseURL = (process.env.OPENAI_BASE_URL || "").replace(/\/$/, "");
@@ -577,6 +594,102 @@ function getProviderConfig(request = null) {
     url: (process.env.OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/$/, ""),
     local: true,
   };
+}
+
+function openRouterResponseFormat(name, schema) {
+  return {
+    type: "json_schema",
+    json_schema: { name, strict: true, schema },
+  };
+}
+
+function openRouterOutputText(response) {
+  const content = response?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content.map((part) => part?.text || "").join("").trim();
+  }
+  return "";
+}
+
+function openRouterRouting() {
+  return {
+    require_parameters: true,
+  };
+}
+
+async function extractSourcesWithOpenRouter(client, config, body) {
+  const language = requestedLanguage(body);
+  const response = await client.chat.completions.create({
+    model: config.model,
+    messages: [{
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: [
+            "Read each supplied image as a separate source in the order provided.",
+            "Transcribe every visible source word exactly. Do not explain, correct, complete, or modernize it.",
+            "Detect the original visible language before translating. Record unreadable fragments instead of guessing.",
+            wantsFullTranslation(body)
+              ? `Translate the complete extracted text into ${language}. Preserve headings, equations, labels, names, and sequence; do not summarize.`
+              : "Set translatedText and translationLanguage to empty strings and translationConfidence to not-requested.",
+            "Use source IDs S1, S2, and so on in image order. sourceType is upload.",
+            body.sources.map((source, index) => `S${index + 1}: ${source.name || `Source ${index + 1}`}`).join("\n"),
+          ].join("\n\n"),
+        },
+        ...body.sources.map((source) => ({ type: "image_url", image_url: { url: source.dataUrl } })),
+      ],
+    }],
+    response_format: openRouterResponseFormat("bookmoth_source_extraction", sourceExtractionSchema),
+    provider: openRouterRouting(),
+    temperature: 0,
+    max_tokens: 8000,
+  });
+  const outputText = openRouterOutputText(response);
+  if (!outputText) throw new ProviderError("OpenRouter did not return source extraction results.", 502);
+  const parsed = JSON.parse(outputText);
+  return Array.isArray(parsed.sources)
+    ? parsed.sources.map((source) => finalizeSourceTranslation(source, body))
+    : [];
+}
+
+async function createWithOpenRouter(config, body) {
+  if (!config.apiKey) {
+    throw new ProviderError("Connect a free OpenRouter key before creating a learning pack.", 401);
+  }
+  const client = new OpenAI({
+    apiKey: config.apiKey,
+    baseURL: config.baseURL,
+    defaultHeaders: {
+      "HTTP-Referer": "https://bookmoth.vercel.app",
+      "X-OpenRouter-Title": "Bookmoth",
+    },
+  });
+  const extractedSources = await extractSourcesWithOpenRouter(client, config, body);
+  assertReadableEvidence(extractedSources);
+  const prompt = createPrompt(body, extractedSources);
+  const response = await client.chat.completions.create({
+    model: config.model,
+    messages: [{ role: "user", content: prompt }],
+    response_format: openRouterResponseFormat("bookmoth_learning_pack", packSchema),
+    provider: openRouterRouting(),
+    temperature: 0,
+    max_tokens: 16000,
+  });
+  const outputText = openRouterOutputText(response);
+  if (!outputText) throw new ProviderError("OpenRouter did not return a learning pack.", 502);
+  const pack = JSON.parse(outputText);
+  pack.sources = extractedSources;
+  pack.researchSources = [];
+  pack.languageProfile = buildLanguageProfile(body, extractedSources);
+  pack.researchProfile = {
+    requested: false,
+    performed: false,
+    sourceCount: 0,
+    note: "The free OpenRouter route is grounded in the uploaded material and does not perform a live web search.",
+  };
+  return pack;
 }
 
 function createPrompt(body, extractedSources = null) {
@@ -1212,6 +1325,36 @@ async function createWithOllama(config, body) {
 export async function GET(request) {
   try {
     const config = getProviderConfig(request);
+    if (config.provider === "openrouter") {
+      let ready = false;
+      let keyDetail = "Paste a free OpenRouter API key to enable image reading and source-locked study guides.";
+      if (config.apiKey) {
+        try {
+          const response = await fetch("https://openrouter.ai/api/v1/key", {
+            headers: { Authorization: `Bearer ${config.apiKey}` },
+            signal: globalThis.AbortSignal.timeout(8000),
+          });
+          ready = response.ok;
+          keyDetail = response.ok
+            ? "OpenRouter key verified. Free models have provider rate limits and availability can change."
+            : "OpenRouter rejected this key. Check it in OpenRouter, then try again.";
+        } catch {
+          keyDetail = "Bookmoth could not reach OpenRouter to verify the key. Try again in a moment.";
+        }
+      }
+      return Response.json({
+        provider: "openrouter",
+        model: config.model,
+        local: false,
+        ready,
+        userKeyRequired: config.userKeyRequired,
+        userSuppliedKey: config.userSuppliedKey,
+        researchAvailable: false,
+        translationAvailable: true,
+        freeTierNotice: "OpenRouter's free tier is rate-limited; it is not unlimited service.",
+        detail: keyDetail,
+      });
+    }
     if (config.provider === "openai") {
       const credentialAvailable = Boolean(config.apiKey);
       const ready = credentialAvailable && config.gatewayCreditsReady;
@@ -1281,6 +1424,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  let activeProvider = "unknown";
   try {
     const body = await request.json();
     const sourceError = validateSources(body.sources);
@@ -1289,11 +1433,14 @@ export async function POST(request) {
       return Response.json({ error: "Confirm that these materials are permitted study sources." }, { status: 400 });
     }
     const config = getProviderConfig(request);
+    activeProvider = config.provider;
     const rawPack = config.provider === "openai"
       ? await createWithOpenAI(config, body)
-      : await createWithOllama(config, body);
+      : config.provider === "openrouter"
+        ? await createWithOpenRouter(config, body)
+        : await createWithOllama(config, body);
     let finalPack = normalizeLearningPack(rawPack);
-    if (config.provider === "openai") {
+    if (["openai", "openrouter"].includes(config.provider)) {
       const cloudSubjectProfile = inferSubjectProfile(finalPack.sources, body.context, body.goal);
       const cloudValidation = validateDeepLessons(
         finalPack.deepLessons,
@@ -1348,6 +1495,7 @@ export async function POST(request) {
         teachingModel: config.teachingModel || config.model,
         local: config.local,
         researchAvailable: config.provider === "openai",
+        userKeyRequired: Boolean(config.userKeyRequired),
       },
     });
   } catch (error) {
@@ -1364,6 +1512,18 @@ export async function POST(request) {
       return Response.json(
         { error: "Bookmoth's public AI is temporarily unavailable because its Vercel AI Gateway balance or budget has been reached." },
         { status: 503 },
+      );
+    }
+    if (activeProvider === "openrouter" && error?.status === 401) {
+      return Response.json(
+        { error: "OpenRouter rejected this key. Reconnect a valid key and try again." },
+        { status: 401 },
+      );
+    }
+    if (activeProvider === "openrouter" && error?.status === 429) {
+      return Response.json(
+        { error: "The selected free model is rate-limited right now. Wait for the OpenRouter allowance to reset, or use local Ollama." },
+        { status: 429 },
       );
     }
 

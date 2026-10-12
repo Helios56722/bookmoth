@@ -236,6 +236,8 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [dragging, setDragging] = useState(false);
   const [providerStatus, setProviderStatus] = useState(null);
+  const [openRouterKey, setOpenRouterKey] = useState("");
+  const [checkingProvider, setCheckingProvider] = useState(false);
   const [howToOpen, setHowToOpen] = useState(false);
   const fileInput = useRef(null);
   const cameraInput = useRef(null);
@@ -247,7 +249,11 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/create")
+    const savedKey = globalThis.sessionStorage.getItem("bookmoth-openrouter-key") || "";
+    setOpenRouterKey(savedKey);
+    fetch("/api/create", {
+      headers: savedKey ? { "x-bookmoth-openrouter-key": savedKey } : {},
+    })
       .then((response) => response.json())
       .then((data) => { if (active) setProviderStatus(data); })
       .catch(() => {
@@ -255,6 +261,32 @@ export default function Home() {
       });
     return () => { active = false; };
   }, []);
+
+  async function checkOpenRouterKey(candidate = openRouterKey) {
+    const key = candidate.trim();
+    setCheckingProvider(true);
+    setMessage("");
+    try {
+      if (key) globalThis.sessionStorage.setItem("bookmoth-openrouter-key", key);
+      else globalThis.sessionStorage.removeItem("bookmoth-openrouter-key");
+      const response = await fetch("/api/create", {
+        headers: key ? { "x-bookmoth-openrouter-key": key } : {},
+      });
+      const data = await response.json();
+      setProviderStatus(data);
+      if (key && !data.ready) setMessage(data.detail || "OpenRouter could not verify this key.");
+    } catch {
+      setMessage("Bookmoth could not check OpenRouter. Try again in a moment.");
+    } finally {
+      setCheckingProvider(false);
+    }
+  }
+
+  function disconnectOpenRouter() {
+    setOpenRouterKey("");
+    globalThis.sessionStorage.removeItem("bookmoth-openrouter-key");
+    checkOpenRouterKey("");
+  }
 
   async function addFiles(fileList) {
     setMessage("");
@@ -289,7 +321,10 @@ export default function Home() {
     try {
       const response = await fetch("/api/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(openRouterKey.trim() ? { "x-bookmoth-openrouter-key": openRouterKey.trim() } : {}),
+        },
         body: JSON.stringify({
           sources,
           context,
@@ -312,6 +347,7 @@ export default function Home() {
           model: data.provider.model,
           teachingModel: data.provider.teachingModel,
           researchAvailable: data.provider.researchAvailable,
+          userKeyRequired: data.provider.userKeyRequired,
           translationAvailable: true,
           detail: data.provider.local ? "Learning pack created on this PC." : "Learning pack created with the configured cloud provider.",
         });
@@ -515,7 +551,7 @@ export default function Home() {
               </label>
               <label className={`control-check ${providerStatus?.researchAvailable ? "" : "disabled"}`}>
                 <input type="checkbox" checked={researchMode && providerStatus?.researchAvailable === true} disabled={!providerStatus?.researchAvailable} onChange={(event) => setResearchMode(event.target.checked)} />
-                <span><b>Cross-check with global sources</b><small>{providerStatus?.researchAvailable ? "Searches primary and original-language sources across relevant regions." : "Available in the deployed cloud version; local Ollama stays upload-only."}</small></span>
+                <span><b>Cross-check with global sources</b><small>{providerStatus?.researchAvailable ? "Searches primary and original-language sources across relevant regions." : providerStatus?.provider === "openrouter" ? "The free OpenRouter route stays grounded in your uploads; it does not include live web research." : "Available with a research-enabled cloud provider; local Ollama stays upload-only."}</small></span>
               </label>
               <p>Bookmoth ranks sources by authority and proximity to the claim. Chinese-language sources are prioritized for Chinese-origin material; every subject receives the same original-language treatment.</p>
             </fieldset>
@@ -524,6 +560,27 @@ export default function Home() {
               <input type="checkbox" checked={studyUseAccepted} onChange={(event) => setStudyUseAccepted(event.target.checked)} />
               <span>I have permission to use these materials. I am studying, not answering an active or proctored assessment.</span>
             </label>
+
+            {providerStatus?.provider === "openrouter" && providerStatus?.userKeyRequired && (
+              <div className="openrouter-setup">
+                <div>
+                  <b>{providerStatus.ready ? "OpenRouter connected" : "Connect free OpenRouter AI"}</b>
+                  <small>Your key stays in this browser tab. Bookmoth forwards it for analysis and does not save it in the project database.</small>
+                </div>
+                <ol>
+                  <li><a href="https://openrouter.ai/settings/keys" target="_blank" rel="noreferrer">Create or copy an OpenRouter API key</a>.</li>
+                  <li>Paste it below and check the connection.</li>
+                </ol>
+                <label>OpenRouter key
+                  <input type="password" autoComplete="off" value={openRouterKey} onChange={(event) => setOpenRouterKey(event.target.value)} placeholder="sk-or-v1-…" />
+                </label>
+                <div className="provider-actions">
+                  <button className="button" type="button" disabled={checkingProvider || !openRouterKey.trim()} onClick={() => checkOpenRouterKey()}>{checkingProvider ? "Checking…" : "Check connection"}</button>
+                  {providerStatus.ready && <button className="text-button" type="button" onClick={disconnectOpenRouter}>Disconnect</button>}
+                </div>
+                <p>Free access is rate-limited and model availability can change. Uploaded screenshots are sent to OpenRouter and its selected model provider. Use local Ollama for private, on-device analysis.</p>
+              </div>
+            )}
 
             <div className={`provider-status ${providerStatus?.ready ? "ready" : providerStatus ? "blocked" : "checking"}`} role="status">
               <span aria-hidden="true" />
@@ -539,8 +596,10 @@ export default function Home() {
             {sources[0]?.displayOnly && <button className="button full" type="button" onClick={() => fileInput.current?.click()}>Replace sample with my images</button>}
             {message && <p className="status-message" role="status">{message}</p>}
             <p className="privacy-note">{providerStatus?.local
-              ? "Local mode keeps image analysis on this PC through Ollama. Images are not uploaded to OpenAI."
-              : "Images stay in this browser until you create a pack. Then they are sent to the configured AI provider."}</p>
+              ? "Local mode keeps image analysis on this PC through Ollama. Images are not uploaded to a cloud model."
+              : providerStatus?.provider === "openrouter"
+                ? "Images stay in this browser until you create a pack. Then they are sent through OpenRouter to the selected model provider."
+                : "Images stay in this browser until you create a pack. Then they are sent to the configured AI provider."}</p>
           </aside>
 
           <section className="output-panel" aria-live="polite">

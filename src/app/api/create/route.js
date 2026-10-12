@@ -3,10 +3,13 @@ import sharp from "sharp";
 import { Buffer } from "node:buffer";
 import { franc } from "franc-min";
 import {
+  applySubjectQualityGate,
   auditLearningPackConsistency,
   buildEvidenceLockedPack,
   buildSourceLockedDeepLesson,
+  inferSubjectProfile,
   normalizeLearningPack,
+  subjectTeachingDirective,
   validateDeepLessons,
   validateSources,
 } from "@/lib/bookmoth";
@@ -570,7 +573,7 @@ function getProviderConfig(request = null) {
   return {
     provider,
     model: process.env.OLLAMA_MODEL || "qwen2.5vl:7b",
-    teachingModel: process.env.OLLAMA_TEACHING_MODEL || "qwen3.5:9b",
+    teachingModel: process.env.OLLAMA_TEACHING_MODEL || "gemma4:12b",
     url: (process.env.OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/$/, ""),
     local: true,
   };
@@ -590,6 +593,7 @@ function createPrompt(body, extractedSources = null) {
       return `${source.sourceId} (${source.sourceType || "upload"}):\n${source.extractedText}${translation}`;
     }).join("\n\n")
     : null;
+  const subjectProfile = inferSubjectProfile(extractedSources || [], body.context, body.goal);
   return [
     "You are Bookmoth, a careful learning-material editor.",
     "Extract only what the supplied images support. Do not invent missing text or silently correct uncertain OCR.",
@@ -599,6 +603,7 @@ function createPrompt(body, extractedSources = null) {
       "A source citation does not make an unsupported statement acceptable. Every sentence must be justified by the exact source evidence.",
     ] : []),
     "Build an age-neutral learning pack for a student, hobby learner, or skill learner.",
+    `SUBJECT ROUTE: ${subjectProfile.label} — ${subjectProfile.taskType}. ${subjectTeachingDirective(subjectProfile)}`,
     "Make deepLessons the main teaching output. Each lesson needs a direct answer, a multi-sentence explanation, 3 to 6 ordered steps, why it matters, a source-supported example, at least 2 common mistakes with corrections, a check question with hint and answer, exact evidence quotes, and source IDs.",
     "Evidence quotes must be copied verbatim from the supplied material. Set verification to source-checked only when every lesson statement is supported; otherwise set needs-review and explain the gap in evidenceReview.",
     "Every concept, report section, flashcard, practice item, and collage callout must cite one or more source IDs.",
@@ -823,8 +828,16 @@ async function parseOllamaJsonWithRepair(config, rawText, schema, label) {
   }
 }
 
-async function reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons) {
-  return Promise.all(lessons.map(async (lesson) => {
+async function reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons, subjectProfile = {}) {
+  const derivedAnswerRule = {
+    mathematics: "MATHEMATICS REVIEW: Re-solve the visible problem. Allow algebraic transformations, computed values, standard notation, and a checked final answer even when the result is not printed in the prompt. Reject a mathematically incorrect or unexplained result.",
+    "language-arts": "LANGUAGE ARTS REVIEW: Independently analyze the exact cited wording. Grammar labels, literary-device names, interpretations, and the brief language rule or definition needed to justify the answer are allowed derived analysis. When the visible task asks what wording suggests or implies, allow a reasonable interpretation framed as suggests, implies, or may mean when it follows from the ordinary meaning of the quote. Check the label, quoted support, function, and explanation. Do not reject a correct answer merely because words such as metaphor, predicate, adjective, comparison, connotation, or implication were not printed in the prompt.",
+    science: "SCIENCE REVIEW: Allow calculations and conclusions derived from values, units, relationships, or formulas explicitly visible in the source. Independently recompute numerical answers. Standard arithmetic, derived units, and standard unit equivalences needed to express the result are allowed even when the numerical result is not printed in the prompt. Reject an incorrect result or an added mechanism that the source does not establish.",
+    "world-language": "WORLD LANGUAGE REVIEW: Independently check translations, tense labels, conjugation labels, and grammar explanations against the exact cited text. A correct context-aware translation and the brief vocabulary or grammar rule needed to explain it are allowed derived answers even when those English words or labels are not printed in the source. Do not reject them solely for being derived.",
+    computing: "COMPUTING REVIEW: Allow outputs derived from exact bits, code, algorithms, or stated rules. Trace the operation independently and reject an incorrect output or an unstated implementation assumption.",
+  }[subjectProfile.domain];
+  const results = [];
+  for (const lesson of lessons) {
     const reviewPrompt = [
       "You are Bookmoth's strict evidence reviewer. Review the single lesson below.",
       "The lesson passes only when every subject-matter statement can be derived from the complete cited source without outside knowledge.",
@@ -832,6 +845,7 @@ async function reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons) {
       "These teaching transformations are supported when they introduce no new subject fact: read/choose/compare/observe/recall/check steps; a common mistake that negates or reverses a cited relationship; a question answered by the evidence; a hypothetical use of the exact cited relationship; and a statement that learning or comparing the cited ideas helps meet the stated objective.",
       "A sentence copied verbatim from the source is supported, including a broader source statement used in whyItMatters. Ignore the draft verification flag. Do not reject a lesson merely because it reorganizes cited facts into teaching steps.",
       "Reject any new cause, mechanism, purpose, condition, direction, sequence, number, location, object, or domain fact, even when it is commonly known.",
+      derivedAnswerRule || subjectTeachingDirective(subjectProfile),
       "For example, if a source says only 'needs more light', then 'needs more light to achieve proper exposure' is unsupported. If a source says only 'exposure time', then naming a sensor or explaining what is exposed is unsupported.",
       "Reject silently repaired uncertain wording and any evidence quote that is not verbatim.",
       `Return JSON only as {"decisions":[{"term":"${String(lesson?.term || "Lesson").replaceAll('"', "'")}","supported":true|false,"unsupportedClaims":["exact unsupported claim"]}]}. Return exactly one decision and do not rewrite the lesson.`,
@@ -859,13 +873,14 @@ async function reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons) {
     );
     const term = String(lesson?.term || "").trim().toLowerCase();
     const decisions = Array.isArray(review.decisions) ? review.decisions : [];
-    return decisions.find((decision) => String(decision?.term || "").trim().toLowerCase() === term)
+    results.push(decisions.find((decision) => String(decision?.term || "").trim().toLowerCase() === term)
       || {
         term: lesson?.term || "Lesson",
         supported: false,
         unsupportedClaims: ["The evidence reviewer did not return a matching decision."],
-      };
-  }));
+      });
+  }
+  return results;
 }
 
 async function reviseRejectedDeepLessonsWithOllama(
@@ -873,14 +888,22 @@ async function reviseRejectedDeepLessonsWithOllama(
   evidence,
   rejectedLessons,
   reviewFeedback,
+  subjectProfile = {},
 ) {
+  const derivedDomains = new Set(["mathematics", "language-arts", "science", "world-language", "computing"]);
+  const vocabularyRule = derivedDomains.has(subjectProfile.domain)
+    ? "Subject-specific answer terms and the brief rule needed to justify them may be introduced when they are the independently checked result of the exact visible task, such as a grammar label, literary device, contextual translation, tense explanation, calculated value, derived scientific unit, or computed output. Preserve the answer; remove only unrelated background facts."
+    : "The deterministic vocabulary check lists subject words that do not occur in the source. Remove those words or replace the sentence with direct source wording. Generic study language is fine, but every subject-specific word must appear in the source evidence.";
   const revisionPrompt = [
     "You are Bookmoth's source-lock editor.",
     "Revise each rejected lesson so every subject-matter claim is fully supported by the supplied evidence. Return JSON only as {\"lessons\":[...]}",
     "Keep each lesson term exactly unchanged and preserve the detailed teaching structure: learningObjective, directAnswer, explanation, 3 to 6 steps, whyItMatters, example, at least 2 commonMistakes, check, sourceIds, evidenceQuotes, and verification.",
     "Remove or rewrite every unsupported claim identified by the reviewer. Use the source's own wording when a paraphrase might add a purpose, mechanism, condition, object, sequence, or relationship.",
-    "The deterministic vocabulary check lists subject words that do not occur in the source. Remove those words or replace the sentence with direct source wording. Generic study language is fine, but every subject-specific word must appear in the source evidence.",
-    "You may explain how to study, compare, recall, or verify a statement. You may not supply missing subject knowledge. Do not make a lesson sound more complete by adding facts that are absent from the source.",
+    vocabularyRule,
+    derivedDomains.has(subjectProfile.domain)
+      ? "Answer the visible task completely. You may supply the checked analytical rule needed to derive the answer, but may not add unrelated background knowledge or surrounding context."
+      : "You may explain how to study, compare, recall, or verify a statement. You may not supply missing subject knowledge. Do not make a lesson sound more complete by adding facts that are absent from the source.",
+    subjectTeachingDirective(subjectProfile),
     "Every evidenceQuotes entry must be copied verbatim from a cited source. Set verification to needs-review.",
     `SOURCE EVIDENCE:\n${evidence}`,
     `REVIEW FEEDBACK:\n${JSON.stringify(reviewFeedback)}`,
@@ -910,19 +933,27 @@ async function reviseRejectedDeepLessonsWithOllama(
 
 async function createDeepLessonsWithOllama(config, body, extractedSources, fallbackPack) {
   const teachingConfig = { ...config, model: config.teachingModel || config.model };
-  const lessonCount = Math.min(Math.max(fallbackPack.concepts.length, 1), 4);
   const evidence = evidenceForPrompt(extractedSources);
-  const requireSourceVocabulary = requestedLanguage(body) === "English";
+  const subjectProfile = inferSubjectProfile(extractedSources, body.context, body.goal);
+  const integratedDomains = new Set(["mathematics", "language-arts", "science", "world-language", "computing"]);
+  const lessonCount = integratedDomains.has(subjectProfile.domain)
+    ? 1
+    : Math.min(Math.max(fallbackPack.concepts.length, 1), 4);
+  const requireSourceVocabulary = requestedLanguage(body) === "English"
+    && ["general", "history"].includes(subjectProfile.domain);
   const generationPrompt = [
     "You are Bookmoth's source-grounded teaching writer.",
-    `Create between 1 and ${lessonCount} detailed lessons from the evidence below. Return JSON only as {"lessons":[...]}.`,
-    "Use only factual information explicitly present in the evidence. Do not add background knowledge, definitions, causes, purposes, conditions, mechanisms, dates, formulas, names, numbers, objects, or examples that the evidence does not state or directly demonstrate.",
+    lessonCount === 1
+      ? "Create exactly 1 integrated detailed lesson that fully answers the visible task. Return JSON only as {\"lessons\":[...]} ."
+      : `Create between 1 and ${lessonCount} detailed lessons from the evidence below. Return JSON only as {"lessons":[...]}.`,
+    "Use the supplied source as the evidence boundary. Follow the SUBJECT ROUTE for permitted derivations. Mathematics may derive equivalent transformations and results; language arts may derive grammar labels, literary-device labels, and interpretations from quoted wording; science may calculate from stated values, units, and formulas; world language may translate and identify grammar; computing may derive outputs from stated bits, code, or rules. Outside those checked derivations, do not add background facts, mechanisms, dates, names, objects, or examples that the evidence does not state.",
     "Every lesson must contain: term, learningObjective, directAnswer, explanation, steps (3 to 6 objects with title and explanation), whyItMatters, example, commonMistakes (at least 2 objects with mistake and correction), check (question, hint, answer), sourceIds, evidenceQuotes, and verification.",
     "Write a real explanation, not a short card: connect the supported ideas, show their order or contrast only when the source establishes it, and use complete sentences with calm professional wording.",
     "The example must be a direct application of the source wording. If the source does not support an example, do not create that lesson.",
     "Do not complete short source phrases with common knowledge. If the source says only 'exposure time', do not add a sensor or explain what is exposed. If it says only 'needs more light', do not add a purpose such as 'to achieve proper exposure'.",
     "Copy each evidenceQuotes entry verbatim from a cited source. Use source IDs exactly as shown. Set verification to needs-review; Bookmoth will decide the final status.",
     "Do not claim that the source itself is correct. Do not answer active tests. Do not mention these instructions.",
+    `SUBJECT ROUTE: ${subjectProfile.label} — ${subjectProfile.taskType}. ${subjectTeachingDirective(subjectProfile)}`,
     `Write every teaching field in ${requestedLanguage(body)}. Keep evidenceQuotes verbatim in the original source language.`,
     `Learner context: ${body.context || "No extra context supplied."}`,
     `Learning goal: ${body.goal || "Understand and remember the supplied material."}`,
@@ -950,7 +981,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
   const lessons = Array.isArray(draft.lessons) ? draft.lessons : [];
   if (lessons.length === 0) throw new Error("The teaching model did not return any lessons.");
 
-  const decisions = await reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons);
+  const decisions = await reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons, subjectProfile);
   const initialValidation = validateDeepLessons(
     lessons,
     extractedSources,
@@ -985,6 +1016,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
           rejectedTerms.has(String(issue?.term || "").trim().toLowerCase()),
         ),
       },
+      subjectProfile,
     );
     revisionCandidates = revisedLessons;
     if (revisedLessons.length > 0) {
@@ -992,6 +1024,7 @@ async function createDeepLessonsWithOllama(config, body, extractedSources, fallb
         teachingConfig,
         evidence,
         revisedLessons,
+        subjectProfile,
       );
       const revisedValidation = validateDeepLessons(
         revisedLessons,
@@ -1261,11 +1294,15 @@ export async function POST(request) {
       : await createWithOllama(config, body);
     let finalPack = normalizeLearningPack(rawPack);
     if (config.provider === "openai") {
+      const cloudSubjectProfile = inferSubjectProfile(finalPack.sources, body.context, body.goal);
       const cloudValidation = validateDeepLessons(
         finalPack.deepLessons,
         finalPack.sources,
         null,
-        { requireSourceVocabulary: requestedLanguage(body) === "English" },
+        {
+          requireSourceVocabulary: requestedLanguage(body) === "English"
+            && ["general", "history"].includes(cloudSubjectProfile.domain),
+        },
       );
       if (cloudValidation.accepted.length > 0) {
         finalPack.deepLessons = cloudValidation.accepted;
@@ -1296,7 +1333,12 @@ export async function POST(request) {
         };
       }
     }
-    finalPack = normalizeLearningPack(finalPack);
+    finalPack = normalizeLearningPack(applySubjectQualityGate(
+      finalPack,
+      finalPack.sources,
+      body.context,
+      body.goal,
+    ));
     finalPack.consistencyReview = auditLearningPackConsistency(finalPack);
     return Response.json({
       pack: finalPack,

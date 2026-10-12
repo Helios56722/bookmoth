@@ -1,13 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  applySubjectQualityGate,
   auditLearningPackConsistency,
   buildEvidenceLockedPack,
   buildSourceLockedDeepLesson,
+  buildVerifiedLinearEquationLesson,
   findUnsupportedLessonVocabulary,
+  inferSubjectProfile,
   learningPackToMarkdown,
   normalizeLearningPack,
   sampleLearningPack,
+  solveSupportedLinearEquation,
   validateDeepLessons,
   validateSources,
 } from "../src/lib/bookmoth.js";
@@ -221,6 +225,13 @@ test("deep lesson gate accepts exact evidence and rejects unsupported quotes", (
   assert.equal(valid.accepted.length, 1);
   assert.equal(valid.accepted[0].verification, "source-checked");
 
+  const conciseValid = validateDeepLessons([{
+    ...validLesson,
+    directAnswer: "Less light.",
+    check: { ...validLesson.check, answer: "Less light." },
+  }], sources, review);
+  assert.equal(conciseValid.accepted.length, 1, "correct concise answers must not fail a character-count gate");
+
   const invalid = validateDeepLessons([
     { ...validLesson, evidenceQuotes: ["A fast shutter always produces perfect sharpness."] },
   ], sources, review);
@@ -280,4 +291,79 @@ test("source-lock recovery keeps detailed structure without unsupported subject 
   );
   assert.equal(rejected.accepted.length, 0);
   assert.equal(rejected.issues[0].vocabularyValid, false);
+});
+
+test("subject routing selects discipline-specific teaching methods", () => {
+  const cases = [
+    ["Solve 4x - 7 = 21 and show the algebra.", "mathematics", "Equation solving"],
+    ["Identify the subject, predicate, adjective, and verb in this sentence.", "language-arts", "Grammar and sentence analysis"],
+    ["Explain how photosynthesis converts light energy into chemical energy.", "science", "Process and mechanism explanation"],
+    ["Build a chronology of the treaty signed in 1919 and explain its effects.", "history", "Historical cause and consequence"],
+    ["Translate this Spanish paragraph and explain the verb conjugation.", "world-language", "Translation and language structure"],
+    ["Physics: use F = m × a with mass 6 kg and acceleration 2 m/s^2.", "science", "Calculation and scientific reasoning"],
+    ["Explain why binary 1011 represents eleven using powers of two.", "computing", "Computational representation"],
+  ];
+
+  for (const [text, domain, taskType] of cases) {
+    const profile = inferSubjectProfile([{ extractedText: text }]);
+    assert.equal(profile.domain, domain, text);
+    assert.equal(profile.taskType, taskType, text);
+    assert.ok(profile.guidance.length > 40);
+  }
+});
+
+test("deterministic linear solver handles equivalent common equation forms", () => {
+  const cases = [
+    ["Solve 4x - 7 = 21.", 7],
+    ["Solve 3(x + 2) = 18.", 4],
+    ["Find x: x / 4 + 2 = 5.", 12],
+    ["Solve 2x + 3 = x + 9.", 6],
+    ["Solve -2x + 4 = 10.", -3],
+  ];
+
+  for (const [problem, expected] of cases) {
+    const result = solveSupportedLinearEquation(problem);
+    assert.ok(result, problem);
+    assert.equal(result.solution, expected, problem);
+    assert.ok(Math.abs((result.left.a * expected + result.left.b) - (result.right.a * expected + result.right.b)) < 1e-10);
+  }
+  assert.equal(solveSupportedLinearEquation("Solve x^2 - 5x + 6 = 0."), null);
+});
+
+test("verified math lesson shows the equation, derivation, answer, and substitution check", () => {
+  const sources = [{
+    sourceId: "S1",
+    extractedText: "Algebra practice\nSolve 4x - 7 = 21. Show every step.",
+    confidence: "high",
+  }];
+  const verified = buildVerifiedLinearEquationLesson(sources);
+  assert.ok(verified);
+  assert.equal(verified.lesson.directAnswer, "x = 7");
+  assert.equal(verified.lesson.steps.length, 4);
+  assert.match(verified.lesson.steps[3].explanation, /21 = 21/);
+  assert.equal(verified.verification.status, "verified");
+  assert.equal(verified.verification.expectedAnswer, "x = 7");
+});
+
+test("subject quality gate replaces a model math answer with deterministic verified work", () => {
+  const sources = [{ sourceId: "S1", extractedText: "Solve 2x + 3 = x + 9.", confidence: "high" }];
+  const base = buildEvidenceLockedPack(sources, "Solve and check the equation.");
+  base.deepLessons[0].directAnswer = "x = 99";
+  const gated = normalizeLearningPack(applySubjectQualityGate(base, sources, "Algebra", "Solve the equation"));
+  assert.equal(gated.subjectProfile.domain, "mathematics");
+  assert.equal(gated.subjectProfile.answerVerification.status, "verified");
+  assert.equal(gated.deepLessons[0].directAnswer, "x = 6");
+  assert.equal(gated.evidenceReview.acceptedLessons, 1);
+  gated.consistencyReview = auditLearningPackConsistency(gated);
+  assert.equal(gated.consistencyReview.status, "passed");
+  assert.equal(gated.consistencyReview.checks.subjectAnalysisComplete, true);
+});
+
+test("unsupported math types are labeled for review instead of falsely verified", () => {
+  const sources = [{ sourceId: "S1", extractedText: "Solve x^2 - 5x + 6 = 0.", confidence: "high" }];
+  const base = buildEvidenceLockedPack(sources, "Solve the quadratic.");
+  const gated = normalizeLearningPack(applySubjectQualityGate(base, sources, "Quadratic algebra", "Solve the equation"));
+  assert.equal(gated.subjectProfile.domain, "mathematics");
+  assert.equal(gated.subjectProfile.answerVerification.status, "needs-review");
+  assert.match(gated.subjectProfile.answerVerification.note, /outside Bookmoth's current deterministic/);
 });

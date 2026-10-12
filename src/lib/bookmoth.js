@@ -32,6 +32,365 @@ export function validateSources(sources = []) {
   return null;
 }
 
+const SUBJECT_RULES = [
+  {
+    domain: "mathematics",
+    label: "Mathematics",
+    patterns: [
+      /\b(?:solve|calculate|simplify|factor|equation|algebra|geometry|fraction|percent|probability|derivative|integral|slope|quadratic|polynomial)\b/gi,
+      /(?:^|\s)[a-z]\s*=|=\s*-?\d|\d\s*[+\-×÷*/]\s*\d/gi,
+    ],
+  },
+  {
+    domain: "language-arts",
+    label: "Language arts",
+    patterns: [
+      /\b(?:grammar|sentence|subject|predicate|noun|verb|adjective|adverb|pronoun|metaphor|simile|theme|thesis|claim|passage|poem|essay|author|tone|inference|literary)\b/gi,
+    ],
+  },
+  {
+    domain: "science",
+    label: "Science",
+    patterns: [
+      /\b(?:science|biology|chemistry|physics|cell|atom|molecule|reaction|force|energy|ecosystem|photosynthesis|respiration|gravity|mass|velocity|water cycle|hypothesis|experiment)\b/gi,
+    ],
+  },
+  {
+    domain: "history",
+    label: "History and civics",
+    patterns: [
+      /\b(?:history|historical|empire|revolution|war|treaty|constitution|government|civilization|dynasty|migration|president|parliament|election|primary source|chronology)\b/gi,
+      /\b(?:1[5-9][0-9]{2}|20[0-9]{2})\b/gi,
+    ],
+  },
+  {
+    domain: "computing",
+    label: "Computing",
+    patterns: [
+      /\b(?:computer science|computing|binary|algorithm|programming|code|variable|function|database|network|bit|byte|software|hardware)\b/gi,
+    ],
+  },
+  {
+    domain: "world-language",
+    label: "World language",
+    patterns: [
+      /\b(?:translate|translation|conjugate|conjugation|vocabulary|bilingual|spanish|french|german|mandarin|chinese|japanese|korean|arabic|portuguese|hindi|vietnamese)\b/gi,
+    ],
+  },
+];
+
+function subjectTaskType(domain, text) {
+  if (domain === "mathematics") {
+    if (/\b(?:solve|equation|algebra)\b|[a-z]\s*=|=\s*-?\d/i.test(text)) return "Equation solving";
+    if (/\b(?:percent|ratio|rate|word problem)\b/i.test(text)) return "Quantitative word problem";
+    return "Calculation and reasoning";
+  }
+  if (domain === "language-arts") {
+    if (/\b(?:grammar|subject|predicate|noun|verb|adjective|adverb|pronoun)\b/i.test(text)) return "Grammar and sentence analysis";
+    if (/\b(?:metaphor|simile|theme|tone|passage|poem|literary|inference)\b/i.test(text)) return "Close reading and literary analysis";
+    return "Reading and writing analysis";
+  }
+  if (domain === "science") {
+    if (/\b(?:calculate|formula|substitut|mass|density|acceleration|velocity)\b|[a-z]\s*=\s*[a-z]/i.test(text)) return "Calculation and scientific reasoning";
+    if (/\b(?:process|cycle|reaction|photosynthesis|respiration)\b/i.test(text)) return "Process and mechanism explanation";
+    if (/\b(?:experiment|hypothesis|variable|data)\b/i.test(text)) return "Scientific investigation";
+    return "Scientific concept explanation";
+  }
+  if (domain === "history") {
+    if (/\b(?:primary source|document|speech|letter)\b/i.test(text)) return "Historical source analysis";
+    if (/\b(?:causes?|effects?|impacts?|results?|consequences?)\b/i.test(text)) return "Historical cause and consequence";
+    return "Chronology and historical context";
+  }
+  if (domain === "world-language") return "Translation and language structure";
+  if (domain === "computing") {
+    if (/\b(?:binary|bit|byte|number system)\b/i.test(text)) return "Computational representation";
+    if (/\b(?:code|programming|algorithm|function|variable)\b/i.test(text)) return "Code and algorithm explanation";
+    return "Computing concept explanation";
+  }
+  return "General concept review";
+}
+
+const SUBJECT_GUIDANCE = {
+  mathematics: "Show equivalent transformations in order, preserve mathematical notation, state the result clearly, and verify it by substitution or recomputation.",
+  "language-arts": "Name the language feature or claim, quote the exact words that support it, explain how the evidence works, and separate textual observation from interpretation.",
+  science: "Define the system, identify parts or variables, explain the sequence or mechanism supported by the source, and distinguish observations from inferences.",
+  history: "Establish chronology, identify the people or institutions involved, separate source claims from later interpretation, and explain causes or consequences only when the evidence supports them.",
+  "world-language": "Preserve the original wording, translate meaning in context, explain relevant vocabulary or grammar, and flag idioms or ambiguity instead of forcing a literal answer.",
+  computing: "Trace inputs, representation, operations, and outputs in order; preserve exact code or notation and verify the result with a small worked check.",
+  general: "Give the direct answer, connect it to exact source evidence, explain the reasoning in order, and mark anything the supplied material cannot establish.",
+};
+
+export function inferSubjectProfile(sources = [], context = "", goal = "") {
+  const sourceText = (Array.isArray(sources) ? sources : [])
+    .map((source) => typeof source?.extractedText === "string" ? source.extractedText : "")
+    .join("\n");
+  const text = `${context || ""}\n${goal || ""}\n${sourceText}`;
+  const scores = SUBJECT_RULES.map((rule) => ({
+    ...rule,
+    score: rule.patterns.reduce((total, pattern) => total + [...text.matchAll(new RegExp(pattern.source, pattern.flags))].length, 0),
+  })).sort((left, right) => right.score - left.score);
+  const winner = scores[0];
+  const runnerUp = scores[1];
+  let selected = winner?.score > 0 ? winner : { domain: "general", label: "General learning", score: 0 };
+  const explicitScience = /\b(?:biology|chemistry|physics|earth science)\b/i.test(text);
+  const explicitAlgebra = /\b(?:algebra|linear equation|quadratic)\b/i.test(text)
+    || /\bsolve\b[^\n]{0,50}\b[x-z]\b/i.test(text);
+  if (explicitScience && !explicitAlgebra) {
+    selected = scores.find((item) => item.domain === "science") || selected;
+  }
+  const confidence = selected.score >= 3 && selected.score > (runnerUp?.score || 0)
+    ? "high"
+    : selected.score > 0 ? "medium" : "low";
+
+  return {
+    domain: selected.domain,
+    label: selected.label,
+    taskType: subjectTaskType(selected.domain, text),
+    responseMode: selected.domain === "mathematics" || subjectTaskType(selected.domain, text).includes("Calculation")
+      ? "Worked solution"
+      : "Evidence-guided explanation",
+    guidance: SUBJECT_GUIDANCE[selected.domain] || SUBJECT_GUIDANCE.general,
+    confidence,
+    answerVerification: {
+      status: "not-run",
+      method: selected.domain === "mathematics" ? "Mathematical answer check" : "Source evidence check",
+      note: "The subject-specific verification step has not run yet.",
+      expectedAnswer: "",
+    },
+  };
+}
+
+export function subjectTeachingDirective(profile = {}) {
+  const domain = profile.domain || "general";
+  if (domain === "mathematics") {
+    return "MATHEMATICS MODE: Treat the visible problem as evidence and derive the answer from it. Show every equivalent transformation, preserve signs and units, state the final equation or value, and check the result by substitution or recomputation. Derived arithmetic is allowed; unrelated formulas or assumptions are not.";
+  }
+  if (domain === "language-arts") {
+    return "LANGUAGE ARTS MODE: Identify the exact word, phrase, sentence, or passage being analyzed. A grammar label, literary device, or interpretation may be derived from the visible text even when that label is not printed in the source, but the answer must quote the words that justify it and explain how and why they fit. Distinguish textual fact from reasonable interpretation and do not add author biography or historical context that the source does not supply.";
+  }
+  if (domain === "science") {
+    return "SCIENCE MODE: Identify the system and variables, then explain what happens, how it happens, and why only to the depth supported by the source. Standard calculations and conclusions may be derived from stated values, equations, or observations; show the formula, substitution, units, and check. Do not add an unstated mechanism. Preserve causal direction, sequence, conditions, and the boundary between observation and inference.";
+  }
+  if (domain === "history") {
+    return "HISTORY MODE: Establish who, what, when, and where before explaining causes, consequences, or significance. Keep chronology intact, quote the source for claims, distinguish primary evidence from interpretation, and avoid present-day assumptions that the source does not support.";
+  }
+  if (domain === "world-language") {
+    return "WORLD LANGUAGE MODE: Preserve the original wording. A translation, conjugation, or grammar label may be derived from that wording; give the context-aware result, explain the exact feature that affects meaning, and identify ambiguity, register, or idioms. Do not replace the source with a loose summary or invent missing surrounding context.";
+  }
+  if (domain === "computing") {
+    return "COMPUTING MODE: Trace the representation or algorithm step by step. Derived outputs may be computed from the exact code, bits, values, or rules in the source; show the operation and verify it with a compact worked check. Do not invent runtime behavior, inputs, or implementation details that are not supplied.";
+  }
+  return "GENERAL LEARNING MODE: Answer directly, explain the reasoning in order, tie every factual statement to the supplied evidence, and state what remains unknown.";
+}
+
+function addLinear(left, right, sign = 1) {
+  return { a: left.a + (right.a * sign), b: left.b + (right.b * sign) };
+}
+
+function multiplyLinear(left, right) {
+  if (Math.abs(left.a) > 1e-12 && Math.abs(right.a) > 1e-12) throw new Error("Nonlinear expression");
+  if (Math.abs(left.a) > 1e-12) return { a: left.a * right.b, b: left.b * right.b };
+  if (Math.abs(right.a) > 1e-12) return { a: right.a * left.b, b: right.b * left.b };
+  return { a: 0, b: left.b * right.b };
+}
+
+function tokenizeMathExpression(expression = "") {
+  const normalized = expression
+    .replace(/[×·]/g, "*")
+    .replace(/÷/g, "/")
+    .replace(/[−–—]/g, "-")
+    .replace(/\s+/g, "")
+    .replace(/(\d|\))(?=[A-Za-z(])/g, "$1*")
+    .replace(/([A-Za-z])(?=\()/g, "$1*")
+    .replace(/\)(?=\d)/g, ")*");
+  const tokens = normalized.match(/\d+(?:\.\d+)?|[A-Za-z]|[()+\-*/]/g) || [];
+  if (!tokens.length || tokens.join("") !== normalized) throw new Error("Unsupported notation");
+  return tokens;
+}
+
+function parseLinearExpression(expression = "", variable = "x") {
+  const tokens = tokenizeMathExpression(expression);
+  let index = 0;
+  const peek = () => tokens[index];
+  const take = () => tokens[index++];
+
+  const parseFactor = () => {
+    const token = take();
+    if (token === "+") return parseFactor();
+    if (token === "-") {
+      const value = parseFactor();
+      return { a: -value.a, b: -value.b };
+    }
+    if (token === "(") {
+      const value = parseExpression();
+      if (take() !== ")") throw new Error("Unclosed parenthesis");
+      return value;
+    }
+    if (/^\d/.test(token || "")) return { a: 0, b: Number(token) };
+    if (/^[A-Za-z]$/.test(token || "") && token.toLowerCase() === variable.toLowerCase()) return { a: 1, b: 0 };
+    throw new Error("Unsupported variable");
+  };
+  const parseTerm = () => {
+    let value = parseFactor();
+    while (peek() === "*" || peek() === "/") {
+      const operation = take();
+      const right = parseFactor();
+      if (operation === "*") value = multiplyLinear(value, right);
+      else {
+        if (Math.abs(right.a) > 1e-12 || Math.abs(right.b) < 1e-12) throw new Error("Unsupported division");
+        value = { a: value.a / right.b, b: value.b / right.b };
+      }
+    }
+    return value;
+  };
+  function parseExpression() {
+    let value = parseTerm();
+    while (peek() === "+" || peek() === "-") {
+      const operation = take();
+      value = addLinear(value, parseTerm(), operation === "+" ? 1 : -1);
+    }
+    return value;
+  }
+  const result = parseExpression();
+  if (index !== tokens.length) throw new Error("Unsupported expression");
+  return result;
+}
+
+function formatMathNumber(value) {
+  if (Math.abs(value - Math.round(value)) < 1e-10) return String(Math.round(value));
+  return String(Number(value.toFixed(8)));
+}
+
+export function solveSupportedLinearEquation(text = "") {
+  const normalized = text.replace(/[−–—]/g, "-").replace(/[×·]/g, "*").replace(/÷/g, "/");
+  const lines = normalized.split(/\r?\n/).filter((line) => line.includes("="));
+  for (const line of lines) {
+    const cleaned = line
+      .replace(/^.*?\b(?:solve|find|calculate|determine)\b(?:\s+(?:for\s+)?[A-Za-z])?\s*:?\s*/i, "")
+      .trim();
+    const equalsIndex = cleaned.indexOf("=");
+    if (equalsIndex <= 0) continue;
+    const leftText = cleaned.slice(0, equalsIndex).trim();
+    const rightText = cleaned.slice(equalsIndex + 1).replace(/\.(?!\d).*$/, "").trim();
+    if (!leftText || !rightText) continue;
+    const variables = [...new Set(`${leftText}${rightText}`.match(/[A-Za-z]/g)?.map((item) => item.toLowerCase()) || [])];
+    if (variables.length !== 1) continue;
+    try {
+      const variable = variables[0];
+      const left = parseLinearExpression(leftText, variable);
+      const right = parseLinearExpression(rightText, variable);
+      const coefficient = left.a - right.a;
+      const constant = right.b - left.b;
+      if (Math.abs(coefficient) < 1e-12) continue;
+      const solution = constant / coefficient;
+      const leftCheck = (left.a * solution) + left.b;
+      const rightCheck = (right.a * solution) + right.b;
+      return {
+        variable,
+        equation: `${leftText} = ${rightText}`,
+        evidenceQuote: `${leftText} = ${rightText}`,
+        left,
+        right,
+        coefficient,
+        constant,
+        solution,
+        expectedAnswer: `${variable} = ${formatMathNumber(solution)}`,
+        combinedEquation: `${formatMathNumber(coefficient)}${variable} = ${formatMathNumber(constant)}`,
+        check: `${formatMathNumber(leftCheck)} = ${formatMathNumber(rightCheck)}`,
+      };
+    } catch {
+      // Continue looking for another supported equation in the source.
+    }
+  }
+  return null;
+}
+
+export function buildVerifiedLinearEquationLesson(sources = []) {
+  for (const [index, source] of (Array.isArray(sources) ? sources : []).entries()) {
+    const solved = solveSupportedLinearEquation(source?.extractedText || "");
+    if (!solved) continue;
+    const sourceId = source.sourceId || `S${index + 1}`;
+    const variable = solved.variable;
+    return {
+      lesson: {
+        term: `Solve ${solved.equation}`,
+        learningObjective: `Solve the linear equation for ${variable} and verify the result by substitution.`,
+        directAnswer: solved.expectedAnswer,
+        explanation: `A linear equation stays equivalent when the same valid operation is applied to both sides. Move the constant terms to one side, collect the ${variable}-terms on the other, divide by the remaining coefficient, and substitute the result into the original equation to check it.`,
+        steps: [
+          { title: "Read the equation", explanation: `Start with ${solved.equation}. Keep both sides balanced through every transformation.` },
+          { title: "Collect like terms", explanation: `Combining the variable and constant terms gives ${solved.combinedEquation}.` },
+          { title: `Isolate ${variable}`, explanation: `Divide both sides by ${formatMathNumber(solved.coefficient)} to obtain ${solved.expectedAnswer}.` },
+          { title: "Check by substitution", explanation: `Substituting ${formatMathNumber(solved.solution)} into the original equation gives ${solved.check}, so both sides agree.` },
+        ],
+        whyItMatters: "Showing equivalent transformations makes the reasoning inspectable and catches sign, operation, and arithmetic errors.",
+        example: `The verified result for the supplied equation is ${solved.expectedAnswer}; substitution produces ${solved.check}.`,
+        commonMistakes: [
+          { mistake: "Changing a sign on only one side of the equation.", correction: "Apply the same operation to both sides and write the new equivalent equation." },
+          { mistake: "Stopping before checking the result.", correction: `Substitute ${formatMathNumber(solved.solution)} into both sides; they must produce the same value.` },
+        ],
+        check: {
+          question: `What value of ${variable} makes both sides of ${solved.equation} equal?`,
+          hint: `Use ${solved.combinedEquation}, then divide by the coefficient of ${variable}.`,
+          answer: `${solved.expectedAnswer}; substitution gives ${solved.check}.`,
+        },
+        sourceIds: [sourceId],
+        evidenceQuotes: [solved.evidenceQuote],
+        verification: "source-checked",
+      },
+      verification: {
+        status: "verified",
+        method: "Deterministic linear-equation solver and substitution",
+        note: `Bookmoth independently solved ${solved.equation} and substituted the result. Both sides evaluate to the same value (${solved.check}).`,
+        expectedAnswer: solved.expectedAnswer,
+      },
+    };
+  }
+  return null;
+}
+
+export function applySubjectQualityGate(pack = {}, sources = [], context = "", goal = "") {
+  const profile = inferSubjectProfile(sources, context, goal);
+  const result = { ...pack, subjectProfile: profile };
+  if (profile.domain === "mathematics") {
+    const verifiedMath = buildVerifiedLinearEquationLesson(sources);
+    if (verifiedMath) {
+      result.deepLessons = [verifiedMath.lesson];
+      result.depthSummary = "This worked solution was derived from the visible equation and checked by substituting the result into both sides.";
+      result.evidenceReview = {
+        status: "source-checked",
+        acceptedLessons: 1,
+        rejectedLessons: 0,
+        note: "The visible equation was transcribed as source evidence. Bookmoth then solved it with deterministic linear algebra and verified the answer by substitution.",
+      };
+      result.subjectProfile = { ...profile, answerVerification: verifiedMath.verification };
+      return result;
+    }
+    result.subjectProfile = {
+      ...profile,
+      answerVerification: {
+        status: "needs-review",
+        method: "Mathematical answer check",
+        note: "This problem is outside Bookmoth's current deterministic arithmetic and linear-equation checker. Review the model's method and final result before relying on it.",
+        expectedAnswer: "",
+      },
+    };
+    return result;
+  }
+  result.subjectProfile = {
+    ...profile,
+    answerVerification: {
+      status: pack.evidenceReview?.status === "source-checked" ? "source-checked" : "needs-review",
+      method: "Source quotation and claim-support review",
+      note: pack.evidenceReview?.status === "source-checked"
+        ? `Bookmoth applied its ${profile.taskType.toLowerCase()} method and tied the displayed teaching to exact source evidence.`
+        : "Some teaching was limited or removed because the available source evidence did not support it completely.",
+      expectedAnswer: "",
+    },
+  };
+  return result;
+}
+
 export function normalizeLearningPack(value = {}) {
   const safeArray = (input) => (Array.isArray(input) ? input : []);
   const safeString = (input, fallback = "") =>
@@ -41,6 +400,26 @@ export function normalizeLearningPack(value = {}) {
   return {
     title: safeLabel(value.title, "Untitled learning pack"),
     overview: safeString(value.overview, "No overview was generated."),
+    subjectProfile: {
+      domain: ["mathematics", "language-arts", "science", "history", "world-language", "computing", "general"].includes(value.subjectProfile?.domain)
+        ? value.subjectProfile.domain
+        : "general",
+      label: safeLabel(value.subjectProfile?.label, "General learning"),
+      taskType: safeLabel(value.subjectProfile?.taskType, "General concept review"),
+      responseMode: safeLabel(value.subjectProfile?.responseMode, "Evidence-guided explanation"),
+      guidance: safeString(value.subjectProfile?.guidance, SUBJECT_GUIDANCE.general),
+      confidence: ["high", "medium", "low"].includes(value.subjectProfile?.confidence)
+        ? value.subjectProfile.confidence
+        : "low",
+      answerVerification: {
+        status: ["verified", "source-checked", "needs-review", "not-run"].includes(value.subjectProfile?.answerVerification?.status)
+          ? value.subjectProfile.answerVerification.status
+          : "not-run",
+        method: safeLabel(value.subjectProfile?.answerVerification?.method, "Subject-specific answer check"),
+        note: safeString(value.subjectProfile?.answerVerification?.note, "The subject-specific verification step has not run yet."),
+        expectedAnswer: safeString(value.subjectProfile?.answerVerification?.expectedAnswer),
+      },
+    },
     sources: safeArray(value.sources).map((source, index) => ({
       sourceId: safeString(source?.sourceId, `S${index + 1}`),
       sourceType: ["upload", "web-research"].includes(source?.sourceType) ? source.sourceType : "upload",
@@ -80,6 +459,7 @@ export function normalizeLearningPack(value = {}) {
         reviewCountsMatch: value.consistencyReview?.checks?.reviewCountsMatch === true,
         researchCountMatches: value.consistencyReview?.checks?.researchCountMatches === true,
         requestedTranslationsPresent: value.consistencyReview?.checks?.requestedTranslationsPresent === true,
+        subjectAnalysisComplete: value.consistencyReview?.checks?.subjectAnalysisComplete === true,
       },
       invalidSourceIds: safeArray(value.consistencyReview?.invalidSourceIds).map((item) => safeString(item)).filter(Boolean),
       note: safeString(value.consistencyReview?.note, "Bookmoth has not completed its deterministic consistency audit."),
@@ -228,6 +608,8 @@ export function auditLearningPackConsistency(value = {}) {
     researchCountMatches: !pack.researchProfile.performed
       || (pack.researchSources.length >= 2 && pack.researchProfile.sourceCount === pack.researchSources.length),
     requestedTranslationsPresent,
+    subjectAnalysisComplete: Boolean(pack.subjectProfile.domain && pack.subjectProfile.taskType)
+      && pack.subjectProfile.answerVerification.status !== "not-run",
   };
   const passed = Object.values(checks).every(Boolean);
 
@@ -236,7 +618,7 @@ export function auditLearningPackConsistency(value = {}) {
     checks,
     invalidSourceIds,
     note: passed
-      ? "Source IDs, lesson evidence, review counts, research totals, and requested translations agree across this pack."
+      ? "Source IDs, lesson evidence, review counts, research totals, requested translations, and the subject-specific answer check agree across this pack."
       : "One or more pack-wide checks did not agree. Review the Source check tab before relying on this material.",
   };
 }
@@ -502,7 +884,7 @@ export function validateDeepLessons(lessons = [], sources = [], reviewDecisions 
         return normalizedQuote.length >= 8
           && lesson.sourceIds.some((sourceId) => sourceMap.get(sourceId)?.includes(normalizedQuote));
       });
-    const structureValid = lesson.directAnswer.length >= 12
+    const structureValid = lesson.directAnswer.length >= 2
       && lesson.explanation.length >= 24
       && lesson.steps.length >= 2
       && lesson.steps.every((step) => step.title.length >= 3 && step.explanation.length >= 12)
@@ -510,7 +892,7 @@ export function validateDeepLessons(lessons = [], sources = [], reviewDecisions 
       && lesson.example.length >= 12
       && lesson.commonMistakes.length >= 1
       && lesson.check.question.length >= 8
-      && lesson.check.answer.length >= 8;
+      && lesson.check.answer.length >= 2;
     const review = decisionMap.get(normalizedEvidenceText(label));
     const reviewValid = reviewDecisions === null
       || (review?.supported === true && (!Array.isArray(review.unsupportedClaims) || review.unsupportedClaims.length === 0));
@@ -648,6 +1030,19 @@ export function learningPackToMarkdown(pack) {
     `# ${clean.title}`,
     "",
     clean.overview,
+    "",
+    "## Subject method",
+    "",
+    `Domain: ${clean.subjectProfile.label}`,
+    `Task: ${clean.subjectProfile.taskType}`,
+    `Response mode: ${clean.subjectProfile.responseMode}`,
+    clean.subjectProfile.guidance,
+    `Answer verification: ${clean.subjectProfile.answerVerification.status}`,
+    `Verification method: ${clean.subjectProfile.answerVerification.method}`,
+    clean.subjectProfile.answerVerification.note,
+    ...(clean.subjectProfile.answerVerification.expectedAnswer
+      ? [`Expected answer: ${clean.subjectProfile.answerVerification.expectedAnswer}`]
+      : []),
     "",
     "## Deep lessons",
     "",
@@ -999,7 +1394,7 @@ export function sampleLearningPack() {
     .map((lesson) => buildSourceLockedDeepLesson(lesson, sources))
     .filter(Boolean);
 
-  const sample = normalizeLearningPack({
+  let sample = normalizeLearningPack(applySubjectQualityGate({
     ...base,
     title: "Manual exposure: an evidence-locked review",
     overview: "This sample turns three pairs of statements from the photography source into structured lessons. Factual answers keep the source wording visible instead of filling gaps with outside information.",
@@ -1027,7 +1422,7 @@ export function sampleLearningPack() {
     cautions: [
       "This sample demonstrates source-grounded teaching. Verify the original material before relying on it for a high-stakes decision.",
     ],
-  });
+  }, sources, "Beginner photography and manual exposure", "Understand how aperture, shutter speed, and ISO change a photo."));
   sample.consistencyReview = auditLearningPackConsistency(sample);
   return sample;
 }

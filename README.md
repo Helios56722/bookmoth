@@ -10,6 +10,8 @@ The project is built for students, hobby learners, and people developing a new s
 - Record the topic, learning goal, and original source link.
 - Generate a structured pack with a study guide, a source-linked Lantern trail, a report, flashcards, practice questions, and collage notes.
 - Study with layered lessons containing a direct answer, full explanation, ordered breakdown, why the idea matters, a source-supported example, common mistakes, and a worked understanding check.
+- Route mathematics, language arts, science, history, world-language, and computing material through subject-specific teaching methods.
+- Independently solve and substitution-check supported one-variable linear equations instead of trusting the language model's arithmetic.
 - Trace generated items back to source IDs.
 - See whether each detailed lesson passed the source-ID, exact-quote, structure, and separate support-review gates.
 - Review extracted text, confidence, unclear fragments, and cautions.
@@ -36,10 +38,10 @@ The app also includes a complete sample that works without a model and a web-app
 
 ### Free local mode
 
-Free local mode uses two installed Ollama models: `qwen2.5vl:7b` reads the images, and `qwen3.5:9b` drafts and reviews the detailed teaching. No API key is required, and the work stays on the local PC.
+Free local mode uses two installed Ollama models: `qwen2.5vl:7b` reads the images, and `gemma4:12b` drafts and reviews the detailed teaching. The 12B teaching model is slower than the earlier 9B default, but the subject matrix found materially better literary analysis, scientific calculations, and translation. No API key is required, and the work stays on the local PC.
 
 1. Install Node.js 24 and [Ollama](https://ollama.com/).
-2. Install the local models once with `ollama pull qwen2.5vl:7b` and `ollama pull qwen3.5:9b` if they are not already present.
+2. Install the local models once with `ollama pull qwen2.5vl:7b` and `ollama pull gemma4:12b` if they are not already present.
 3. Run:
 
 ```bash
@@ -68,7 +70,9 @@ The hosted app uses Vercel AI Gateway with the deployment's automatic OIDC crede
 
 Both providers live behind `src/app/api/create/route.js` and return the same learning-pack schema. Cloud mode separates the work into source extraction and complete translation, global corroboration with traceable links, and evidence-locked teaching. Source selection is based on authority and proximity to the claim rather than country: original-language Chinese sources are prioritized for Chinese-origin subjects, while every other subject receives the same original-language treatment.
 
-Local mode separates reading, teaching, and verification. The vision model transcribes each image. The teaching model drafts layered lessons from that extracted evidence, then performs a separate support review. Bookmoth rejects unknown source IDs, evidence quotes that do not appear in the cited OCR text, incomplete lesson structures, and subject vocabulary that is absent from the source. Rejected lessons receive one constrained correction pass. If expanded wording still fails, Bookmoth keeps the useful lesson grouping but rebuilds every factual answer from exact evidence instead of filling the gap from memory.
+Local mode separates reading, teaching, and verification. The vision model transcribes each image. The teaching model drafts layered lessons from that extracted evidence, then performs a separate support review. Bookmoth rejects unknown source IDs, evidence quotes that do not appear in the cited OCR text, and incomplete lesson structures. General and history explanations also receive a strict source-vocabulary check. Subject routes may derive only the answer types their tasks require: mathematical transformations, language analysis, scientific calculations, contextual translations, or computed outputs. Rejected lessons receive one constrained correction pass. If expanded wording still fails, Bookmoth keeps the useful lesson grouping but rebuilds every factual answer from exact evidence instead of filling the gap from memory.
+
+Supported one-variable linear equations receive an additional deterministic algebra pass. Bookmoth replaces the model draft with a worked solution and verifies the result by substitution. Mathematical forms outside that checker remain visible but are labeled for manual review rather than presented as independently verified.
 
 These checks verify that the displayed teaching is grounded in the supplied material. They do not prove absolute correctness. Cloud corroboration improves the evidence base, but linked sources and machine translation still require human review for high-stakes academic, medical, legal, financial, or safety decisions.
 
@@ -106,9 +110,13 @@ The field-guide concept that produced unwanted lettering remains in the explorat
 npm run test
 npm run lint
 npm run build
+# With the production server running on port 4342:
+npm run validate:subjects
 ```
 
 The repository's automated workflow runs the same test, lint, and production-build checks on pushes and pull requests.
+
+On 2026-10-11, the production local API passed a 10-topic matrix covering linear algebra, English grammar, literary analysis, biology, chemistry, physics, world history, Spanish, earth science, and binary computing. Each case had to select the correct subject route, include the expected answer concepts, preserve exact source evidence, provide ordered teaching steps and mistake corrections, and pass the pack-wide consistency audit. The algebra result was repeated and remained identical. Five additional linear-equation forms pass deterministic unit checks. See [`docs/validation/SUBJECT_MATRIX_VALIDATION_2026-10-11.md`](docs/validation/SUBJECT_MATRIX_VALIDATION_2026-10-11.md) and the full machine-readable response in [`docs/validation/SUBJECT_MATRIX_LIVE_RESPONSE_2026-10-11.json`](docs/validation/SUBJECT_MATRIX_LIVE_RESPONSE_2026-10-11.json). This controlled matrix does not prove universal accuracy, handwriting recognition, curriculum alignment, or learning improvement.
 
 Verified locally on 2026-10-07 with Ollama `qwen2.5vl:7b`: a slightly rotated synthetic phone photo with mild blur and glare completed through the production API in 8.0 seconds. All five expected water-cycle terms were extracted, the result contained 12 source-linked concepts, and automated checks found zero invalid citations. The same fixture also completed through the browser interface. Seven unit tests, ESLint, the optimized Next.js build, desktop browser review, 390 × 844 responsive review, text-overflow checks, and the no-warning console check passed. See [`docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md`](docs/validation/POLISH_AND_PHONE_PHOTO_REPORT_2026-10-07.md). This remains a controlled operator test, not proof of accuracy across handwriting, equations, damaged pages, low light, or all real phone photos.
 

@@ -9,6 +9,7 @@
     "start": "next start --hostname 127.0.0.1 --port 4342",
     "lint": "eslint",
     "test": "node --test",
+    "validate:subjects": "node scripts/validate-subject-matrix.mjs",
     "check": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

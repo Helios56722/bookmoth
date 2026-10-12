@@ -20,6 +20,7 @@ The project is built for students, hobby learners, and people developing a new s
 - See whether a pack is source-grounded only or has also been cross-checked with live web evidence.
 - Export the pack as Markdown or JSON.
 - Export a visual source collage as PNG.
+- Start a new local workspace session at any time; this clears the current uploads and generated pack while preserving the connected provider configuration. A fresh workspace does not reset a model provider's account-level rate limits or quotas.
 
 ## What makes Bookmoth its own product
 

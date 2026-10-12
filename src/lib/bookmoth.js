@@ -371,7 +371,7 @@ export function applySubjectQualityGate(pack = {}, sources = [], context = "", g
       answerVerification: {
         status: "needs-review",
         method: "Mathematical answer check",
-        note: "This problem is outside Bookmoth's current deterministic arithmetic and linear-equation checker. Review the model's method and final result before relying on it.",
+        note: "This problem is outside Bookmoth's current deterministic linear-equation checker. Review the model's method and final result before relying on it.",
         expectedAnswer: "",
       },
     };

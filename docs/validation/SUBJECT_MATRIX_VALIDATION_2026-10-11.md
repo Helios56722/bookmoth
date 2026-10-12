@@ -5,16 +5,16 @@ Result: 10/10 subject fixtures passed; repeatability passed.
 
 | Fixture | Subject route | Verification | Result | Time |
 |---|---|---|---|---:|
-| algebra-linear | Mathematics | verified | PASS | 10.9 s |
-| english-grammar | Language arts | source-checked | PASS | 17.1 s |
-| english-literary-device | Language arts | source-checked | PASS | 15.6 s |
-| biology-cell-membrane | Science | source-checked | PASS | 8.1 s |
-| chemistry-density | Science | source-checked | PASS | 8.8 s |
-| physics-force | Science | source-checked | PASS | 12.6 s |
-| world-history | History and civics | source-checked | PASS | 14.8 s |
-| spanish-language | World language | source-checked | PASS | 17.6 s |
-| earth-science-water-cycle | Science | source-checked | PASS | 8.4 s |
-| computing-binary | Computing | source-checked | PASS | 20.3 s |
+| algebra-linear | Mathematics | verified | PASS | 17.1 s |
+| english-grammar | Language arts | source-checked | PASS | 17.7 s |
+| english-literary-device | Language arts | source-checked | PASS | 16.1 s |
+| biology-cell-membrane | Science | source-checked | PASS | 8.7 s |
+| chemistry-density | Science | source-checked | PASS | 9.4 s |
+| physics-force | Science | source-checked | PASS | 10.3 s |
+| world-history | History and civics | source-checked | PASS | 15.4 s |
+| spanish-language | World language | source-checked | PASS | 18.1 s |
+| earth-science-water-cycle | Science | source-checked | PASS | 8.9 s |
+| computing-binary | Computing | source-checked | PASS | 21.5 s |
 
 ## Acceptance checks
 

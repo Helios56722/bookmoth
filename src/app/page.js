@@ -239,6 +239,7 @@ export default function Home() {
   const [openRouterKey, setOpenRouterKey] = useState("");
   const [checkingProvider, setCheckingProvider] = useState(false);
   const [howToOpen, setHowToOpen] = useState(false);
+  const [sessionNumber, setSessionNumber] = useState(1);
   const fileInput = useRef(null);
   const cameraInput = useRef(null);
 
@@ -393,7 +394,9 @@ export default function Home() {
     setResearchMode(true);
     setStudyUseAccepted(false);
     setPack(null);
-    setMessage("");
+    setActiveTab("guide");
+    setSessionNumber((current) => current + 1);
+    setMessage("New Bookmoth session started. This clears the current workspace; it does not reset model-provider usage limits.");
   }
 
   function exportMarkdown() {
@@ -483,7 +486,10 @@ export default function Home() {
       <section className="workspace" id="workspace">
         <div className="section-heading">
           <div><p className="eyebrow"><span /> Your desk</p><h2>Make one clear learning pack.</h2></div>
-          <button className="text-button" type="button" onClick={resetWorkspace}>Clear workspace</button>
+          <div className="session-actions">
+            <span className="session-label">Session {sessionNumber}</span>
+            <button className="text-button" type="button" onClick={resetWorkspace} disabled={busy}>Start new session</button>
+          </div>
         </div>
 
         <ol className="quick-start" aria-label="Quick-start sequence">

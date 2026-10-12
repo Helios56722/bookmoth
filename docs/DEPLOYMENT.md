@@ -1,6 +1,6 @@
 # Bookmoth public deployment
 
-Bookmoth needs a server runtime because `/api/create` reads images, calls the configured AI provider, and keeps the provider credential away from the browser. GitHub stores and tests the code; Vercel runs it.
+Bookmoth needs a server runtime because `/api/create` reads images and calls the configured AI provider. GitHub stores and tests the code; Vercel runs it. The public default uses a key supplied by each learner instead of a shared Bookmoth key.
 
 ## Point-and-click setup
 
@@ -8,35 +8,34 @@ Bookmoth needs a server runtime because `/api/create` reads images, calls the co
 2. Choose **Add New → Project**, then import `Helios56722/bookmoth` from GitHub.
 3. Confirm **Framework Preset: Next.js** and leave **Root Directory** at the repository root.
 4. In **Environment Variables**, add these non-secret values for Production and Preview:
-   - `BOOKMOTH_PROVIDER` = `openai`
-   - `OPENAI_BASE_URL` = `https://ai-gateway.vercel.sh/v1`
-   - `OPENAI_MODEL` = `openai/gpt-5-mini`
-   - `AI_GATEWAY_CREDITS_READY` = `true` after the team has activated AI Gateway credits
-5. Open the team's AI Gateway page and activate the included free-credit tier. Vercel currently requires a valid payment card on the team before it will service requests, even when usage stays within the free monthly credit.
-6. Deploy `main`.
+   - `BOOKMOTH_PROVIDER` = `openrouter`
+   - `OPENROUTER_MODEL` = `dots-studio/dots-3-note-preview:free`
+5. Leave `OPENROUTER_API_KEY` unset. Public users connect their own keys in the interface.
+6. Deploy the tested `main` branch.
 
-Vercel supplies `VERCEL_OIDC_TOKEN` to deployments automatically, so Bookmoth does not need a provider key in the project. AI Gateway usage consumes the team's gateway credits. If a direct provider key is intentionally used later, keep it server-side and never place it in GitHub files, browser code, screenshots, build logs, or a variable beginning with `NEXT_PUBLIC_`.
+Bookmoth keeps a user-supplied key in that browser tab's `sessionStorage` and forwards it per request. It does not write the key to a Bookmoth database. The key and uploaded screenshots pass through the Vercel function to OpenRouter and its selected provider. Free access is rate-limited, provider availability can change, and this route is not anonymous or unlimited.
 
-Keep `AI_GATEWAY_CREDITS_READY=false` until the team finishes gateway activation. The public interface will then report the real setup state and disable generation instead of accepting work that cannot complete.
+If the owner intentionally adds a shared provider key later, keep it server-side and never place it in GitHub files, screenshots, build logs, or a variable beginning with `NEXT_PUBLIC_`. Add rate limits, an abuse budget, and a privacy review before making shared-key generation public.
 
 ## Release gate
 
 Before a production release:
 
 1. Confirm GitHub Actions passed `npm run check` for the exact commit.
-2. Open `https://YOUR-DOMAIN/api/create` and confirm:
-   - `provider` is `vercel-ai-gateway`;
-   - `ready` is `true`;
-   - `researchAvailable` and `translationAvailable` are `true`.
-3. Upload one permitted, non-private screenshot.
-4. Generate an English source-only pack.
-5. Generate a second pack with full translation and global research enabled.
-6. Open at least two linked corroboration sources and compare the pack's claims with them.
+2. Open `https://YOUR-DOMAIN/api/create` without a key and confirm:
+   - `provider` is `openrouter`;
+   - `userKeyRequired` is `true`;
+   - `ready` is `false` until the user connects a key;
+   - `researchAvailable` is `false` and `translationAvailable` is `true`.
+3. Use the interface to connect a personal OpenRouter key. Do not paste it into an issue, chat, screenshot, or log.
+4. Upload one permitted, non-private screenshot and generate an English source-only pack.
+5. Generate a second pack with full source translation enabled.
+6. Check the extracted source text, cited source IDs, uncertainty labels, and subject-specific method against the image.
 7. Check desktop and phone widths, all six output tabs, Markdown export, JSON export, and the browser console.
 
 ## Honest limits
 
 - Source grounding proves that displayed teaching matches the evidence Bookmoth received. It does not prove that the evidence is true.
-- Global corroboration raises confidence only when strong independent sources agree.
+- The free OpenRouter route is upload-grounded and does not perform live web corroboration.
 - Machine translation can mishandle names, equations, quotations, and technical terms.
 - Local Ollama mode supports private OCR, translation, teaching, and source checks, but it does not have live web research.

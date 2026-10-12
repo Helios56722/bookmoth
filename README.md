@@ -64,11 +64,19 @@ OpenAI is an optional cloud provider. Creating a key does not guarantee free API
 
 See the official [OpenAI authentication guidance](https://developers.openai.com/api/reference/overview) and [prepaid billing guidance](https://help.openai.com/en/articles/8264644-setting-up-and-managing-prepaid-api-billing).
 
+### Free hosted OpenRouter mode
+
+The public app can use a free OpenRouter model without placing a shared provider key in Bookmoth. Each learner creates an OpenRouter key, pastes it into Bookmoth, and checks the connection. The key stays in that browser tab's `sessionStorage`, is forwarded to Bookmoth's server route for each request, and is not written to a Bookmoth database or committed to GitHub.
+
+The current default is `dots-studio/dots-3-note-preview:free`, selected because it accepts images and structured output. Free model access is rate-limited, model availability can change, and the selected provider may process or retain data under its own policy. This is not anonymous or unlimited service. The free route reads and explains uploaded material; it does not perform live web research.
+
+For private on-device analysis, use the local Ollama route instead.
+
 ### Public Vercel mode
 
-The hosted app uses Vercel AI Gateway with the deployment's automatic OIDC credential. This avoids storing an OpenAI key in the project. Gateway requests use the Vercel team's AI credits, so review the current balance and keep automatic top-up off unless the project owner intentionally enables it.
+The hosted app defaults to the user-connected OpenRouter route. Set `BOOKMOTH_PROVIDER=openrouter` and `OPENROUTER_MODEL=dots-studio/dots-3-note-preview:free`. Do not add a shared `OPENROUTER_API_KEY` unless the project owner intentionally accepts the usage, privacy, rate-limit, and abuse-control responsibility.
 
-Both providers live behind `src/app/api/create/route.js` and return the same learning-pack schema. Cloud mode separates the work into source extraction and complete translation, global corroboration with traceable links, and evidence-locked teaching. Source selection is based on authority and proximity to the claim rather than country: original-language Chinese sources are prioritized for Chinese-origin subjects, while every other subject receives the same original-language treatment.
+All providers live behind `src/app/api/create/route.js` and return the same learning-pack schema. The OpenRouter route separates image extraction from evidence-locked teaching and preserves complete translation when requested. It stays grounded in the uploaded sources. The optional OpenAI research route can add live corroboration with traceable links when separately configured and funded. Source selection is based on authority and proximity to the claim rather than country: original-language Chinese sources are prioritized for Chinese-origin subjects, while every other subject receives the same original-language treatment.
 
 Local mode separates reading, teaching, and verification. The vision model transcribes each image. The teaching model drafts layered lessons from that extracted evidence, then performs a separate support review. Bookmoth rejects unknown source IDs, evidence quotes that do not appear in the cited OCR text, and incomplete lesson structures. General and history explanations also receive a strict source-vocabulary check. Subject routes may derive only the answer types their tasks require: mathematical transformations, language analysis, scientific calculations, contextual translations, or computed outputs. Rejected lessons receive one constrained correction pass. If expanded wording still fails, Bookmoth keeps the useful lesson grouping but rebuilds every factual answer from exact evidence instead of filling the gap from memory.
 
@@ -82,15 +90,15 @@ Bookmoth is a Next.js application with a server API. GitHub Pages cannot run its
 
 1. Sign in to Vercel and import `Helios56722/bookmoth`.
 2. Keep the repository root as the project root. Vercel should detect Next.js.
-3. Add `BOOKMOTH_PROVIDER=openai`, `OPENAI_BASE_URL=https://ai-gateway.vercel.sh/v1`, and `OPENAI_MODEL=openai/gpt-5-mini` as server-side environment variables for Production and Preview. Vercel supplies `VERCEL_OIDC_TOKEN` automatically.
+3. Add `BOOKMOTH_PROVIDER=openrouter` and `OPENROUTER_MODEL=dots-studio/dots-3-note-preview:free` as server-side environment variables for Production and Preview. Leave `OPENROUTER_API_KEY` unset for the user-connected-key design.
 4. Deploy the tested `main` branch.
-5. Verify `/api/create` reports `ready: true`, then complete one permitted screenshot-to-pack test on the deployment.
+5. Verify `/api/create` reports `provider: openrouter` and `userKeyRequired: true`. In the public interface, connect a personal OpenRouter key and complete one permitted screenshot-to-pack test.
 
 The local Ollama provider is intentionally not a public-hosting backend; a Vercel function cannot reach a model running on Jaylan's PC. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the point-and-click release and verification checklist.
 
 ## Privacy boundary
 
-Selected images remain in browser memory while you prepare the pack. In default local mode, clicking **Create learning pack** sends them only to Ollama on the same PC. In hosted mode, they pass through Vercel AI Gateway to the selected model provider under those services' terms. This repository does not add a database or generation history.
+Selected images remain in browser memory while you prepare the pack. In local mode, clicking **Create learning pack** sends them only to Ollama on the same PC. In the hosted OpenRouter mode, they pass through Bookmoth's Vercel function, OpenRouter, and the selected model provider under those services' terms. This repository does not add a database or generation history.
 
 Do not upload private records, answer sheets, copyrighted material you are not allowed to process, or content from an active or proctored assessment.
 

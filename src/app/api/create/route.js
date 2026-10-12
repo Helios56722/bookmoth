@@ -563,6 +563,7 @@ function getProviderConfig(request = null) {
     return {
       provider,
       model: process.env.OPENROUTER_MODEL || "dots-studio/dots-3-note-preview:free",
+      fallbackModel: process.env.OPENROUTER_FALLBACK_MODEL || "openrouter/free",
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: requestOpenRouterKey || serverApiKey,
       userKeyRequired: !serverApiKey,
@@ -666,30 +667,43 @@ async function createWithOpenRouter(config, body) {
       "X-OpenRouter-Title": "Bookmoth",
     },
   });
-  const extractedSources = await extractSourcesWithOpenRouter(client, config, body);
-  assertReadableEvidence(extractedSources);
-  const prompt = createPrompt(body, extractedSources);
-  const response = await client.chat.completions.create({
-    model: config.model,
-    messages: [{ role: "user", content: prompt }],
-    response_format: openRouterResponseFormat("bookmoth_learning_pack", packSchema),
-    provider: openRouterRouting(),
-    temperature: 0,
-    max_tokens: 16000,
-  });
-  const outputText = openRouterOutputText(response);
-  if (!outputText) throw new ProviderError("OpenRouter did not return a learning pack.", 502);
-  const pack = JSON.parse(outputText);
-  pack.sources = extractedSources;
-  pack.researchSources = [];
-  pack.languageProfile = buildLanguageProfile(body, extractedSources);
-  pack.researchProfile = {
-    requested: false,
-    performed: false,
-    sourceCount: 0,
-    note: "The free OpenRouter route is grounded in the uploaded material and does not perform a live web search.",
-  };
-  return pack;
+  const candidateModels = [...new Set([config.model, config.fallbackModel].filter(Boolean))];
+  let lastError = null;
+  for (const model of candidateModels) {
+    const candidateConfig = { ...config, model };
+    try {
+      const extractedSources = await extractSourcesWithOpenRouter(client, candidateConfig, body);
+      assertReadableEvidence(extractedSources);
+      const prompt = createPrompt(body, extractedSources);
+      const response = await client.chat.completions.create({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        response_format: openRouterResponseFormat("bookmoth_learning_pack", packSchema),
+        provider: openRouterRouting(),
+        temperature: 0,
+        max_tokens: 16000,
+      });
+      const outputText = openRouterOutputText(response);
+      if (!outputText) throw new ProviderError("OpenRouter did not return a learning pack.", 502);
+      const pack = JSON.parse(outputText);
+      pack.sources = extractedSources;
+      pack.researchSources = [];
+      pack.languageProfile = buildLanguageProfile(body, extractedSources);
+      pack.researchProfile = {
+        requested: false,
+        performed: false,
+        sourceCount: 0,
+        note: "The free OpenRouter route is grounded in the uploaded material and does not perform a live web search.",
+      };
+      config.model = model;
+      return pack;
+    } catch (error) {
+      if (error?.status === 401) throw error;
+      lastError = error;
+      console.warn(`Bookmoth OpenRouter model ${model} failed; trying the next configured free route.`, error);
+    }
+  }
+  throw lastError || new ProviderError("No configured OpenRouter free model completed the request.", 503);
 }
 
 function createPrompt(body, extractedSources = null) {
@@ -1345,6 +1359,7 @@ export async function GET(request) {
       return Response.json({
         provider: "openrouter",
         model: config.model,
+        fallbackModel: config.fallbackModel,
         local: false,
         ready,
         userKeyRequired: config.userKeyRequired,

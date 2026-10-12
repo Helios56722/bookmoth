@@ -10,6 +10,7 @@ Bookmoth needs a server runtime because `/api/create` reads images and calls the
 4. In **Environment Variables**, add these non-secret values for Production and Preview:
    - `BOOKMOTH_PROVIDER` = `openrouter`
    - `OPENROUTER_MODEL` = `dots-studio/dots-3-note-preview:free`
+   - `OPENROUTER_FALLBACK_MODEL` = `openrouter/free`
 5. Leave `OPENROUTER_API_KEY` unset. Public users connect their own keys in the interface.
 6. Deploy the tested `main` branch.
 

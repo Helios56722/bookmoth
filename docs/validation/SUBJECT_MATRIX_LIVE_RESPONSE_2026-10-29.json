@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T18:29:45.258Z",
+  "generatedAt": "2026-10-29T18:38:02.299Z",
   "baseUrl": "http://127.0.0.1:4342",
   "provider": {
     "provider": "ollama",
@@ -39,7 +39,7 @@
       "id": "algebra-linear",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 84735,
+      "elapsedMs": 17481,
       "checks": {
         "http200": true,
         "domain": true,
@@ -143,7 +143,7 @@
       "id": "english-grammar",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 17739,
+      "elapsedMs": 17550,
       "checks": {
         "http200": true,
         "domain": true,
@@ -251,7 +251,7 @@
       "id": "english-literary-device",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 16374,
+      "elapsedMs": 16211,
       "checks": {
         "http200": true,
         "domain": true,
@@ -352,7 +352,7 @@
       "id": "biology-cell-membrane",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 8680,
+      "elapsedMs": 8618,
       "checks": {
         "http200": true,
         "domain": true,
@@ -455,7 +455,7 @@
       "id": "chemistry-density",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 9382,
+      "elapsedMs": 9273,
       "checks": {
         "http200": true,
         "domain": true,
@@ -567,7 +567,7 @@
       "id": "physics-force",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 13307,
+      "elapsedMs": 10158,
       "checks": {
         "http200": true,
         "domain": true,
@@ -675,7 +675,7 @@
       "id": "world-history",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 15428,
+      "elapsedMs": 15217,
       "checks": {
         "http200": true,
         "domain": true,
@@ -791,7 +791,7 @@
       "id": "spanish-language",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 20730,
+      "elapsedMs": 17890,
       "checks": {
         "http200": true,
         "domain": true,
@@ -893,7 +893,7 @@
       "id": "earth-science-water-cycle",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 8904,
+      "elapsedMs": 8784,
       "checks": {
         "http200": true,
         "domain": true,
@@ -997,7 +997,7 @@
       "id": "computing-binary",
       "passed": true,
       "httpStatus": 200,
-      "elapsedMs": 21153,
+      "elapsedMs": 21003,
       "checks": {
         "http200": true,
         "domain": true,

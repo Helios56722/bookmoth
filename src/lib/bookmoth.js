@@ -266,7 +266,7 @@ export function solveSupportedLinearEquation(text = "") {
   const lines = normalized.split(/\r?\n/).filter((line) => line.includes("="));
   for (const line of lines) {
     const cleaned = line
-      .replace(/^.*?\b(?:solve|find|calculate|determine)\b(?:\s+(?:for\s+)?[A-Za-z])?\s*:?\s*/i, "")
+      .replace(/^.*?\b(?:solve|find|calculate|determine)\b(?:\s+for\s+[A-Za-z]|\s+[A-Za-z](?=\s*:))?\s*:?\s*/i, "")
       .trim();
     const equalsIndex = cleaned.indexOf("=");
     if (equalsIndex <= 0) continue;

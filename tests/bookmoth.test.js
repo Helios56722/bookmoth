@@ -455,6 +455,49 @@ test("deterministic linear solver handles equivalent common equation forms", () 
   assert.equal(solveSupportedLinearEquation("Solve x^2 - 5x + 6 = 0."), null);
 });
 
+test("linear solver preserves a leading variable and passes generated substitution checks", () => {
+  const promptCases = [
+    ["Solve x - 16 = 9x + 27.", -43 / 8],
+    ["Solve x + 4 = -7.", -11],
+    ["Find x: x + 11 = -8x + 8.", -1 / 3],
+    ["Solve for x: 2x + 3 = x + 9.", 6],
+  ];
+  for (const [problem, expected] of promptCases) {
+    const result = solveSupportedLinearEquation(problem);
+    assert.ok(result, problem);
+    assert.ok(Math.abs(result.solution - expected) < 1e-9, problem);
+    assert.ok(Math.abs(result.left.a * result.solution + result.left.b - (result.right.a * result.solution + result.right.b)) < 1e-9, problem);
+  }
+
+  let seed = 73917;
+  const random = (limit) => {
+    seed = (seed * 48271) % 2147483647;
+    return seed % limit;
+  };
+  const term = (coefficient, constant) => {
+    let result = coefficient === 0 ? "" : `${coefficient === 1 ? "" : coefficient === -1 ? "-" : coefficient}x`;
+    if (constant !== 0) result += `${constant > 0 && result ? "+" : ""}${constant}`;
+    return result || "0";
+  };
+
+  let checked = 0;
+  for (let index = 0; index < 500; index += 1) {
+    const leftCoefficient = random(31) - 15;
+    const rightCoefficient = random(31) - 15;
+    if (leftCoefficient === rightCoefficient) continue;
+    const leftConstant = random(61) - 30;
+    const rightConstant = random(61) - 30;
+    const problem = `Solve ${term(leftCoefficient, leftConstant)} = ${term(rightCoefficient, rightConstant)}.`;
+    const expected = (rightConstant - leftConstant) / (leftCoefficient - rightCoefficient);
+    const result = solveSupportedLinearEquation(problem);
+    assert.ok(result, problem);
+    assert.ok(Math.abs(result.solution - expected) < 1e-9, problem);
+    assert.ok(Math.abs(result.left.a * result.solution + result.left.b - (result.right.a * result.solution + result.right.b)) < 1e-9, problem);
+    checked += 1;
+  }
+  assert.ok(checked > 450, `Expected broad generated coverage, checked ${checked} equations.`);
+});
+
 test("verified math lesson shows the equation, derivation, answer, and substitution check", () => {
   const sources = [{
     sourceId: "S1",

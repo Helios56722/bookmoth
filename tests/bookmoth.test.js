@@ -513,6 +513,30 @@ test("verified math lesson shows the equation, derivation, answer, and substitut
   assert.equal(verified.verification.expectedAnswer, "x = 7");
 });
 
+test("verified math answers preserve simple exact fractions and label rounded decimals", () => {
+  const oneThird = buildVerifiedLinearEquationLesson([{
+    sourceId: "S1",
+    extractedText: "Solve 3x = 1.",
+    confidence: "high",
+  }]);
+  assert.equal(oneThird.lesson.directAnswer, "x = 1/3");
+  assert.match(oneThird.lesson.steps[3].explanation, /1 = 1/);
+
+  const negativeFraction = buildVerifiedLinearEquationLesson([{
+    sourceId: "S1",
+    extractedText: "Solve 3x = -2.",
+    confidence: "high",
+  }]);
+  assert.equal(negativeFraction.lesson.directAnswer, "x = -2/3");
+
+  const rounded = buildVerifiedLinearEquationLesson([{
+    sourceId: "S1",
+    extractedText: "Solve 10001x = 1.",
+    confidence: "high",
+  }]);
+  assert.equal(rounded.lesson.directAnswer, "x = approximately 0.00009999");
+});
+
 test("subject quality gate replaces a model math answer with deterministic verified work", () => {
   const sources = [{ sourceId: "S1", extractedText: "Solve 2x + 3 = x + 9.", confidence: "high" }];
   const base = buildEvidenceLockedPack(sources, "Solve and check the equation.");

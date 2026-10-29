@@ -261,6 +261,24 @@ function formatMathNumber(value) {
   return String(Number(value.toFixed(8)));
 }
 
+function formatExactSolution(value) {
+  if (Math.abs(value - Math.round(value)) < 1e-10) return String(Math.round(value));
+  if (Math.abs(value) <= 1e9) {
+    for (let denominator = 2; denominator <= 10000; denominator += 1) {
+      const numerator = Math.round(value * denominator);
+      if (Math.abs(numerator / denominator - value) > Number.EPSILON * Math.max(1, Math.abs(value)) * 16) continue;
+      let left = Math.abs(numerator);
+      let right = denominator;
+      while (right) [left, right] = [right, left % right];
+      const divisor = left || 1;
+      const reducedNumerator = numerator / divisor;
+      const reducedDenominator = denominator / divisor;
+      return `${reducedNumerator}/${reducedDenominator}`;
+    }
+  }
+  return `approximately ${formatMathNumber(value)}`;
+}
+
 export function solveSupportedLinearEquation(text = "") {
   const normalized = text.replace(/[−–—]/g, "-").replace(/[×·]/g, "*").replace(/÷/g, "/");
   const lines = normalized.split(/\r?\n/).filter((line) => line.includes("="));
@@ -294,7 +312,7 @@ export function solveSupportedLinearEquation(text = "") {
         coefficient,
         constant,
         solution,
-        expectedAnswer: `${variable} = ${formatMathNumber(solution)}`,
+        expectedAnswer: `${variable} = ${formatExactSolution(solution)}`,
         combinedEquation: `${formatMathNumber(coefficient)}${variable} = ${formatMathNumber(constant)}`,
         check: `${formatMathNumber(leftCheck)} = ${formatMathNumber(rightCheck)}`,
       };

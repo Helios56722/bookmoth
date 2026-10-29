@@ -1,0 +1,1114 @@
+{
+  "generatedAt": "2026-10-29T18:29:45.258Z",
+  "baseUrl": "http://127.0.0.1:4342",
+  "provider": {
+    "provider": "ollama",
+    "model": "qwen2.5vl:7b",
+    "teachingModel": "gemma4:12b",
+    "local": true,
+    "ready": true,
+    "researchAvailable": false,
+    "translationAvailable": true,
+    "detail": "Local reading and teaching models are ready."
+  },
+  "totals": {
+    "cases": 10,
+    "passed": 10,
+    "failed": 0
+  },
+  "stability": {
+    "fixture": "algebra-linear",
+    "passed": true,
+    "firstAnswer": "x = 7",
+    "secondAnswer": "x = 7",
+    "firstVerification": {
+      "status": "verified",
+      "method": "Deterministic linear-equation solver and substitution",
+      "note": "Bookmoth independently solved 4x - 7 = 21 and substituted the result. Both sides evaluate to the same value (21 = 21).",
+      "expectedAnswer": "x = 7"
+    },
+    "secondVerification": {
+      "status": "verified",
+      "method": "Deterministic linear-equation solver and substitution",
+      "note": "Bookmoth independently solved 4x - 7 = 21 and substituted the result. Both sides evaluate to the same value (21 = 21).",
+      "expectedAnswer": "x = 7"
+    }
+  },
+  "results": [
+    {
+      "id": "algebra-linear",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 84735,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/x\\s*=\\s*7/i",
+        "/21\\s*=\\s*21/i"
+      ],
+      "subjectProfile": {
+        "domain": "mathematics",
+        "label": "Mathematics",
+        "taskType": "Equation solving",
+        "responseMode": "Worked solution",
+        "guidance": "Show equivalent transformations in order, preserve mathematical notation, state the result clearly, and verify it by substitution or recomputation.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "verified",
+          "method": "Deterministic linear-equation solver and substitution",
+          "note": "Bookmoth independently solved 4x - 7 = 21 and substituted the result. Both sides evaluate to the same value (21 = 21).",
+          "expectedAnswer": "x = 7"
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "The visible equation was transcribed as source evidence. Bookmoth then solved it with deterministic linear algebra and verified the answer by substitution."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Algebra practice\nSolve 4x - 7 = 21.\nShow each equivalent transformation.\nCheck the answer by substitution.",
+      "lessons": [
+        {
+          "term": "Solve 4x - 7 = 21",
+          "learningObjective": "Solve the linear equation for x and verify the result by substitution.",
+          "directAnswer": "x = 7",
+          "explanation": "A linear equation stays equivalent when the same valid operation is applied to both sides. Move the constant terms to one side, collect the x-terms on the other, divide by the remaining coefficient, and substitute the result into the original equation to check it.",
+          "steps": [
+            {
+              "title": "Read the equation",
+              "explanation": "Start with 4x - 7 = 21. Keep both sides balanced through every transformation."
+            },
+            {
+              "title": "Collect like terms",
+              "explanation": "Combining the variable and constant terms gives 4x = 28."
+            },
+            {
+              "title": "Isolate x",
+              "explanation": "Divide both sides by 4 to obtain x = 7."
+            },
+            {
+              "title": "Check by substitution",
+              "explanation": "Substituting 7 into the original equation gives 21 = 21, so both sides agree."
+            }
+          ],
+          "whyItMatters": "Showing equivalent transformations makes the reasoning inspectable and catches sign, operation, and arithmetic errors.",
+          "example": "The verified result for the supplied equation is x = 7; substitution produces 21 = 21.",
+          "commonMistakes": [
+            {
+              "mistake": "Changing a sign on only one side of the equation.",
+              "correction": "Apply the same operation to both sides and write the new equivalent equation."
+            },
+            {
+              "mistake": "Stopping before checking the result.",
+              "correction": "Substitute 7 into both sides; they must produce the same value."
+            }
+          ],
+          "check": {
+            "question": "What value of x makes both sides of 4x - 7 = 21 equal?",
+            "hint": "Use 4x = 28, then divide by the coefficient of x.",
+            "answer": "x = 7; substitution gives 21 = 21."
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "4x - 7 = 21"
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "english-grammar",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 17739,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/curious fox/i",
+        "/jumps swiftly/i",
+        "/adjective/i",
+        "/adverb/i"
+      ],
+      "subjectProfile": {
+        "domain": "language-arts",
+        "label": "Language arts",
+        "taskType": "Grammar and sentence analysis",
+        "responseMode": "Evidence-guided explanation",
+        "guidance": "Name the language feature or claim, quote the exact words that support it, explain how the evidence works, and separate textual observation from interpretation.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its grammar and sentence analysis method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "1 lesson was corrected by the source-lock editor, then passed a second support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Language arts: sentence analysis\nSentence: The curious fox jumps swiftly.\nIdentify the complete subject and complete predicate.\nName the adjective and the adverb.",
+      "lessons": [
+        {
+          "term": "Sentence Analysis",
+          "learningObjective": "Identify and analyze the components of a sentence, specifically the complete subject, complete predicate, adjectives, and adverbs.",
+          "directAnswer": "The complete subject is 'The curious fox'; the complete predicate is 'jumps swiftly'. The adjective is 'curious' and the adverb is 'swiftly'.",
+          "explanation": "Sentence analysis involves breaking down a sentence into its functional components. The complete subject consists of the noun or pronoun and its modifiers, while the complete predicate consists of the verb and its modifiers. Within these components, adjectives and adverbs provide specific details.",
+          "steps": [
+            {
+              "title": "Identify the Complete Subject",
+              "explanation": "Identify the noun or pronoun and all words that modify it. In the sentence 'The curious fox jumps swiftly.', the complete subject is 'The curious fox'."
+            },
+            {
+              "title": "Identify the Complete Predicate",
+              "explanation": "Identify the verb and all words that modify it or describe the action. In the sentence 'The curious fox jumps swiftly.', the complete predicate is 'jumps swiftly'."
+            },
+            {
+              "title": "Identify the Adjective",
+              "explanation": "Identify the word modifying the noun 'fox'. In the phrase 'curious fox', 'curious' is the adjective."
+            },
+            {
+              "title": "Identify the Adverb",
+              "explanation": "Identify the word modifying the verb 'jumps'. In the phrase 'jumps swiftly', 'swiftly' is the adverb."
+            }
+          ],
+          "whyItMatters": "Analyzing sentence structure allows for a deeper understanding of how grammar functions to convey specific meanings and details within a sentence.",
+          "example": "In the sentence 'The curious fox jumps swiftly.', 'curious' is the adjective modifying 'fox', and 'swiftly' is the adverb modifying 'jumps'.",
+          "commonMistakes": [
+            {
+              "mistake": "Identifying only the main noun as the subject.",
+              "correction": "The complete subject must include all modifiers, such as 'The' and 'curious'."
+            },
+            {
+              "mistake": "Confusing the role of the adverb.",
+              "correction": "Ensure the adverb is identified by its function of modifying the verb 'jumps' rather than being mistaken for a descriptor of the noun."
+            }
+          ],
+          "check": {
+            "question": "In the sentence 'The curious fox jumps swiftly.', what is the complete predicate?",
+            "hint": "Look for the verb and all the words that follow it to describe the action.",
+            "answer": "jumps swiftly"
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "The curious fox jumps swiftly.",
+            "Identify the complete subject and complete predicate.",
+            "Name the adjective and the adverb."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "english-literary-device",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 16374,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/metaphor/i",
+        "/classroom/i",
+        "/zoo/i"
+      ],
+      "subjectProfile": {
+        "domain": "language-arts",
+        "label": "Language arts",
+        "taskType": "Close reading and literary analysis",
+        "responseMode": "Evidence-guided explanation",
+        "guidance": "Name the language feature or claim, quote the exact words that support it, explain how the evidence works, and separate textual observation from interpretation.",
+        "confidence": "medium",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its close reading and literary analysis method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "1 lesson was corrected by the source-lock editor, then passed a second support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Close reading\nLine: The classroom was a zoo after lunch.\nIdentify the literary device.\n\nExplain which exact words create the comparison and what the comparison\nsuggests.",
+      "lessons": [
+        {
+          "term": "Metaphor",
+          "learningObjective": "Identify the literary device used to compare two unlike things and explain the specific imagery it conveys.",
+          "directAnswer": "The literary device is a metaphor.",
+          "explanation": "A metaphor is a literary device that makes a direct comparison between two unrelated things by stating that one thing is another. In the sentence 'The classroom was a zoo after lunch,' the author does not use 'like' or 'as' to create a comparison; instead, the classroom is directly equated to a zoo.",
+          "steps": [
+            {
+              "title": "Identify the Comparison",
+              "explanation": "Locate the two subjects being linked in the sentence. In this case, the 'classroom' is being compared to a 'zoo'."
+            },
+            {
+              "title": "Analyze the Structure",
+              "explanation": "Determine if the comparison is direct or indirect. Because the text states the classroom 'was' a zoo rather than 'was like' a zoo, it is identified as a metaphor."
+            },
+            {
+              "title": "Identify the Key Word",
+              "explanation": "Identify the specific word used to create the comparison. The word 'zoo' is the term used to describe the classroom."
+            }
+          ],
+          "whyItMatters": "Identifying metaphors allows a reader to understand how authors use figurative language to create vivid imagery and convey complex moods without using literal descriptions.",
+          "example": "In the line 'The classroom was a zoo after lunch,' the word 'zoo' functions as a metaphor to describe the classroom.",
+          "commonMistakes": [
+            {
+              "mistake": "Labeling the phrase as a simile.",
+              "correction": "A simile requires the words 'like' or 'as' to make a comparison; since this sentence uses 'was,' it is a metaphor."
+            },
+            {
+              "mistake": "Stating the classroom literally contained animals.",
+              "correction": "The word 'zoo' is a literary device used to describe the atmosphere of the room, not a literal description of the room's contents."
+            }
+          ],
+          "check": {
+            "question": "In the phrase 'The classroom was a zoo after lunch,' what specific word creates the comparison?",
+            "hint": "Look for the noun that replaces the literal description of the room's atmosphere.",
+            "answer": "The word 'zoo'."
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "The classroom was a zoo after lunch."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "biology-cell-membrane",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 8680,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/selectively permeable/i",
+        "/enter and leave/i",
+        "/stable internal environment/i"
+      ],
+      "subjectProfile": {
+        "domain": "science",
+        "label": "Science",
+        "taskType": "Scientific concept explanation",
+        "responseMode": "Evidence-guided explanation",
+        "guidance": "Define the system, identify parts or variables, explain the sequence or mechanism supported by the source, and distinguish observations from inferences.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its scientific concept explanation method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "The teaching draft from gemma4:12b passed a separate support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Biology notes\nThe cell membrane is selectively permeable.\nIt controls which substances enter and leave the cell.\nThis helps the cell maintain a stable internal environment.",
+      "lessons": [
+        {
+          "term": "Cell Membrane",
+          "learningObjective": "Explain the function, mechanism, and biological significance of the cell membrane.",
+          "directAnswer": "The cell membrane is selectively permeable, meaning it controls the movement of substances into and out of the cell to maintain a stable internal environment.",
+          "explanation": "The cell membrane functions as a selective barrier for the cell. Because it is selectively permeable, it acts as a gatekeeper that regulates which specific substances are permitted to enter or leave the cell's interior. This specific mechanism of control is essential for the cell's survival because it allows the cell to maintain a stable internal environment despite external conditions.",
+          "steps": [
+            {
+              "title": "Selective Permeability",
+              "explanation": "The cell membrane is characterized as selectively permeable, which defines its primary physical property."
+            },
+            {
+              "title": "Substance Regulation",
+              "explanation": "Due to its permeability, the membrane controls the movement of substances both entering and leaving the cell."
+            },
+            {
+              "title": "Environmental Stability",
+              "explanation": "The regulation of these substances allows the cell to maintain a stable internal environment."
+            }
+          ],
+          "whyItMatters": "The ability to control substance movement ensures that the cell can maintain a stable internal environment, which is necessary for cellular function.",
+          "example": "The cell membrane controls which substances enter and leave the cell to help the cell maintain a stable internal environment.",
+          "commonMistakes": [
+            {
+              "mistake": "Describing the membrane as completely impermeable.",
+              "correction": "The membrane is selectively permeable, meaning it allows specific substances to pass while controlling others."
+            },
+            {
+              "mistake": "Stating the membrane's purpose is only to let things in.",
+              "correction": "The membrane controls both substances that enter and those that leave the cell."
+            }
+          ],
+          "check": {
+            "question": "How does the selective permeability of the cell membrane contribute to the cell's stability?",
+            "hint": "Think about what the membrane controls and what that control allows the cell to maintain.",
+            "answer": "The membrane's selective permeability allows it to control which substances enter and leave the cell, which helps the cell maintain a stable internal environment."
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "The cell membrane is selectively permeable.",
+            "It controls which substances enter and leave the cell.",
+            "This helps the cell maintain a stable internal environment."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "chemistry-density",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 9382,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/24/i",
+        "/8/i",
+        "/3\\s*g/i",
+        "/cm/i"
+      ],
+      "subjectProfile": {
+        "domain": "science",
+        "label": "Science",
+        "taskType": "Calculation and scientific reasoning",
+        "responseMode": "Worked solution",
+        "guidance": "Define the system, identify parts or variables, explain the sequence or mechanism supported by the source, and distinguish observations from inferences.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its calculation and scientific reasoning method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "The teaching draft from gemma4:12b passed a separate support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Chemistry calculation\nDensity = mass / volume\nA sample has a mass of 24 g and a volume of 8 cm^3.\nCalculate the sample's density and include units.",
+      "lessons": [
+        {
+          "term": "Density",
+          "learningObjective": "Calculate the density of a substance given its mass and volume using the standard formula.",
+          "directAnswer": "3 g/cm³",
+          "explanation": "Density is a physical property calculated by dividing the mass of a substance by its volume. To find the density of a specific sample, the mass value must be divided by the volume value. The resulting value must include the appropriate units, which are derived from the units of mass and volume provided in the calculation.",
+          "steps": [
+            {
+              "title": "Identify the Formula",
+              "explanation": "The formula for density is defined as Density = mass / volume."
+            },
+            {
+              "title": "Identify Given Values",
+              "explanation": "The sample is provided with a mass of 24 g and a volume of 8 cm³."
+            },
+            {
+              "title": "Substitute Values into Formula",
+              "explanation": "Substitute the known values into the equation: Density = 24 g / 8 cm³."
+            },
+            {
+              "title": "Perform Calculation",
+              "explanation": "Divide 24 by 8 to find the numerical value of the density."
+            },
+            {
+              "title": "Finalize Units",
+              "explanation": "Combine the numerical result with the units to express the density as 3 g/cm³."
+            }
+          ],
+          "whyItMatters": "Calculating density allows for the determination of a substance's physical properties based on its mass and volume.",
+          "example": "A sample has a mass of 24 g and a volume of 8 cm³. Density = 24 g / 8 cm³ = 3 g/cm³.",
+          "commonMistakes": [
+            {
+              "mistake": "Omitting the units in the final answer.",
+              "correction": "Always include the units (g/cm³) in the final result to correctly express the density."
+            },
+            {
+              "mistake": "Multiplying mass by volume instead of dividing.",
+              "correction": "Use the correct formula: Density = mass / volume."
+            }
+          ],
+          "check": {
+            "question": "If a sample has a mass of 24 g and a volume of 8 cm³, what is its density?",
+            "hint": "Divide the mass (24 g) by the volume (8 cm³).",
+            "answer": "3 g/cm³"
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "Density = mass / volume",
+            "A sample has a mass of 24 g and a volume of 8 cm^3.",
+            "Calculate the sample's density and include units."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "physics-force",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 13307,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/12\\s*n/i",
+        "/6\\s*kg/i",
+        "/2\\s*m\\/s/i"
+      ],
+      "subjectProfile": {
+        "domain": "science",
+        "label": "Science",
+        "taskType": "Calculation and scientific reasoning",
+        "responseMode": "Worked solution",
+        "guidance": "Define the system, identify parts or variables, explain the sequence or mechanism supported by the source, and distinguish observations from inferences.",
+        "confidence": "medium",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its calculation and scientific reasoning method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "The teaching draft from gemma4:12b passed a separate support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Physics notes\n\nNewton's second law: F = m × a\n\nMass = 6 kg\n\nAcceleration = 2 m/s^2\n\nCalculate the net force and preserve the units.",
+      "lessons": [
+        {
+          "term": "Newton's Second Law",
+          "learningObjective": "Calculate the net force by identifying the variables of mass and acceleration and applying the formula F = m × a while maintaining correct units.",
+          "directAnswer": "The net force is 12 N.",
+          "explanation": "Newton's second law defines the relationship between force, mass, and acceleration. To find the net force, the mass of the object is multiplied by its acceleration. In this specific calculation, a mass of 6 kg and an acceleration of 2 m/s² are used. When these values are multiplied, the resulting force is expressed in Newtons (N), which is the standard unit for force when mass is in kilograms and acceleration is in meters per second squared.",
+          "steps": [
+            {
+              "title": "Identify the Variables",
+              "explanation": "Identify the given values from the problem: the mass (m) is 6 kg and the acceleration (a) is 2 m/s²."
+            },
+            {
+              "title": "State the Formula",
+              "explanation": "Use the formula for Newton's second law: F = m × a."
+            },
+            {
+              "title": "Substitute and Calculate",
+              "explanation": "Substitute the values into the equation: F = 6 kg × 2 m/s²."
+            },
+            {
+              "title": "Determine the Final Result",
+              "explanation": "Perform the multiplication to find the net force: 6 × 2 = 12. The resulting unit is Newtons (N)."
+            }
+          ],
+          "whyItMatters": "Correctly applying Newton's second law allows for the calculation of the net force acting on an object based on its mass and the rate of change of its velocity.",
+          "example": "Given a mass of 6 kg and an acceleration of 2 m/s², the net force is calculated as F = 6 kg × 2 m/s² = 12 N.",
+          "commonMistakes": [
+            {
+              "mistake": "Omitting the units in the final calculation.",
+              "correction": "Always include the unit 'N' (Newtons) when the result is a force derived from kilograms and m/s²."
+            },
+            {
+              "mistake": "Confusing mass and acceleration values.",
+              "correction": "Ensure the mass (m) is the value in kg and acceleration (a) is the value in m/s² before multiplying."
+            }
+          ],
+          "check": {
+            "question": "If the mass was 5 kg and the acceleration was 2 m/s², what would be the net force?",
+            "hint": "Multiply the mass (5) by the acceleration (2).",
+            "answer": "10 N"
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "Newton's second law: F = m × a",
+            "Mass = 6 kg",
+            "Acceleration = 2 m/s^2",
+            "Calculate the net force and preserve the units."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "world-history",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 15428,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/june 28,? 1919/i",
+        "/germany/i",
+        "/allied powers/i",
+        "/reparations/i"
+      ],
+      "subjectProfile": {
+        "domain": "history",
+        "label": "History and civics",
+        "taskType": "Historical cause and consequence",
+        "responseMode": "Evidence-guided explanation",
+        "guidance": "Establish chronology, identify the people or institutions involved, separate source claims from later interpretation, and explain causes or consequences only when the evidence supports them.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its historical cause and consequence method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "1 lesson was rebuilt from exact evidence after expanded wording failed the source gate. Every factual answer is tied to verbatim source statements. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Treaty of Versailles source notes\nThe Treaty of Versailles was signed on June 28, 1919.\nIt formally ended the state of war between Germany and most Allied Powers.\nThe notes list territorial changes, military restrictions, and reparations\namong its terms.",
+      "lessons": [
+        {
+          "term": "Treaty of Versailles",
+          "learningObjective": "Explain the supplied source statements about Treaty of Versailles without adding outside information.",
+          "directAnswer": "The Treaty of Versailles was signed on June 28, 1919. It formally ended the state of war between Germany and most Allied Powers. The notes list territorial changes, military restrictions, and reparations among its terms.",
+          "explanation": "The source gives 3 evidence statements for this lesson. It states: “The Treaty of Versailles was signed on June 28, 1919.” It also states: “It formally ended the state of war between Germany and most Allied Powers.” It also states: “The notes list territorial changes, military restrictions, and reparations among its terms.” These statements are the supported answer. Keep their wording in view while you compare them, and do not add a cause, purpose, or mechanism unless another source states it.",
+          "steps": [
+            {
+              "title": "Locate the evidence",
+              "explanation": "Open S1 and find the quoted statements before answering."
+            },
+            {
+              "title": "Read statement 1",
+              "explanation": "Read and say the exact source wording: “The Treaty of Versailles was signed on June 28, 1919.”"
+            },
+            {
+              "title": "Read statement 2",
+              "explanation": "Read and say the exact source wording: “It formally ended the state of war between Germany and most Allied Powers.”"
+            },
+            {
+              "title": "Read statement 3",
+              "explanation": "Read and say the exact source wording: “The notes list territorial changes, military restrictions, and reparations among its terms.”"
+            },
+            {
+              "title": "Explain the comparison",
+              "explanation": "Describe only what the quoted statements say. Keep any extra cause, purpose, or detail out of the answer."
+            },
+            {
+              "title": "Verify the answer",
+              "explanation": "Compare your answer with each quote and correct any changed, reversed, or added information."
+            }
+          ],
+          "whyItMatters": "This method keeps the lesson relevant to the supplied material and makes every subject statement easy to verify.",
+          "example": "Hide the evidence, answer “What does the source state about Treaty of Versailles?”, then reopen the source and check every word.",
+          "commonMistakes": [
+            {
+              "mistake": "Adding a likely cause, purpose, example, or detail that the source does not state.",
+              "correction": "Use the supported answer only: The Treaty of Versailles was signed on June 28, 1919. It formally ended the state of war between Germany and most Allied Powers. The notes list territorial changes, military restrictions, and reparations among its terms."
+            },
+            {
+              "mistake": "Mixing, changing, or reversing the evidence statements.",
+              "correction": "Return to S1 and read each quote in its original wording."
+            }
+          ],
+          "check": {
+            "question": "What does the supplied source state about Treaty of Versailles?",
+            "hint": "Recall the 3 quoted statements before reopening the evidence.",
+            "answer": "The Treaty of Versailles was signed on June 28, 1919. It formally ended the state of war between Germany and most Allied Powers. The notes list territorial changes, military restrictions, and reparations among its terms."
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "The Treaty of Versailles was signed on June 28, 1919.",
+            "It formally ended the state of war between Germany and most Allied Powers.",
+            "The notes list territorial changes, military restrictions, and reparations among its terms."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "spanish-language",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 20730,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/yesterday/i",
+        "/mar[ií]a walked/i",
+        "/preterite|past tense/i"
+      ],
+      "subjectProfile": {
+        "domain": "world-language",
+        "label": "World language",
+        "taskType": "Translation and language structure",
+        "responseMode": "Evidence-guided explanation",
+        "guidance": "Preserve the original wording, translate meaning in context, explain relevant vocabulary or grammar, and flag idioms or ambiguity instead of forcing a literal answer.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its translation and language structure method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "1 lesson was corrected by the source-lock editor, then passed a second support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Spanish language practice\nSentence: Ayer, María caminó al mercado.\nTranslate the sentence into English.\nIdentify the tense of caminó and explain what Ayer tells the reader.",
+      "lessons": [
+        {
+          "term": "Preterite Tense (Pretérito)",
+          "learningObjective": "Translate the sentence 'Ayer, María caminó al mercado' and identify the grammatical tense and time marker.",
+          "directAnswer": "The English translation is 'Yesterday, María walked to the market.' The verb 'caminó' is in the preterite tense, and 'Ayer' indicates the action occurred 'yesterday'.",
+          "explanation": "The sentence 'Ayer, María caminó al mercado' uses specific markers to establish a past timeframe. The verb 'caminó' is conjugated in the preterite tense, and the word 'Ayer' serves as a temporal marker.",
+          "steps": [
+            {
+              "title": "Identify the Time Marker",
+              "explanation": "Locate the word 'Ayer' at the beginning of the sentence. This word functions as a time marker that tells the reader the action happened 'yesterday'."
+            },
+            {
+              "title": "Analyze the Verb",
+              "explanation": "Identify the verb 'caminó'. It is conjugated in the preterite tense."
+            },
+            {
+              "title": "Translate the Sentence",
+              "explanation": "Combine the translation of the time marker, the subject, the verb, and the location to form the English sentence: 'Yesterday, María walked to the market.'"
+            }
+          ],
+          "whyItMatters": "Identifying the tense and the specific time markers allows the reader to understand exactly when an action occurred.",
+          "example": "Ayer, María caminó al mercado. (Translation: Yesterday, María walked to the market.)",
+          "commonMistakes": [
+            {
+              "mistake": "Translating 'caminó' as 'is walking' or 'walks'.",
+              "correction": "The verb 'caminó' is in the preterite tense, which must be translated as the past tense 'walked'."
+            },
+            {
+              "mistake": "Ignoring the role of 'Ayer'.",
+              "correction": "The word 'Ayer' must be recognized as the specific indicator that the action took place 'yesterday'."
+            }
+          ],
+          "check": {
+            "question": "In the sentence 'Ayer, María caminó al mercado', what does the word 'Ayer' tell the reader about the timing of the action?",
+            "hint": "Look for the specific time marker at the beginning of the sentence.",
+            "answer": "It tells the reader that the action happened 'yesterday'."
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "Ayer, María caminó al mercado.",
+            "Identify the tense of caminó and explain what Ayer tells the reader."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "earth-science-water-cycle",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 8904,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/liquid water/i",
+        "/water vapor/i",
+        "/liquid droplets/i",
+        "/earth's surface/i"
+      ],
+      "subjectProfile": {
+        "domain": "science",
+        "label": "Science",
+        "taskType": "Process and mechanism explanation",
+        "responseMode": "Evidence-guided explanation",
+        "guidance": "Define the system, identify parts or variables, explain the sequence or mechanism supported by the source, and distinguish observations from inferences.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its process and mechanism explanation method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "The teaching draft from gemma4:12b passed a separate support review and deterministic citation checks. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Earth science: water cycle\n\nEvaporation changes liquid water into water vapor.\n\nCondensation changes water vapor into liquid droplets.\n\nPrecipitation returns water from clouds to Earth's surface.",
+      "lessons": [
+        {
+          "term": "Water Cycle Stages",
+          "learningObjective": "Explain the physical changes and directional movements of water as it moves through evaporation, condensation, and precipitation.",
+          "directAnswer": "The water cycle consists of three primary stages: evaporation (liquid water to water vapor), condensation (water vapor to liquid droplets), and precipitation (water from clouds to Earth's surface).",
+          "explanation": "The water cycle is a continuous process involving changes in the state of water and its location. It begins with evaporation, where liquid water undergoes a phase change into water vapor. This is followed by condensation, where the water vapor changes back into liquid droplets. Finally, the cycle involves precipitation, which is the movement of water from the clouds back down to the surface of the Earth.",
+          "steps": [
+            {
+              "title": "Evaporation",
+              "explanation": "During this stage, the state of water changes from a liquid form into water vapor."
+            },
+            {
+              "title": "Condensation",
+              "explanation": "In this stage, the water vapor undergoes a change to become liquid droplets."
+            },
+            {
+              "title": "Precipitation",
+              "explanation": "This stage involves the movement of water from the clouds to the Earth's surface."
+            }
+          ],
+          "whyItMatters": "Understanding these stages allows for the identification of how water changes state and location within the Earth's systems.",
+          "example": "When liquid water becomes water vapor, it is evaporation; when that vapor becomes liquid droplets, it is condensation; and when that water falls from clouds to the surface, it is precipitation.",
+          "commonMistakes": [
+            {
+              "mistake": "Describing condensation as the movement of water from clouds to the ground.",
+              "correction": "Condensation is specifically the change of water vapor into liquid droplets."
+            },
+            {
+              "mistake": "Describing evaporation as the movement of water from clouds to the ground.",
+              "correction": "Evaporation is the change of liquid water into water vapor."
+            }
+          ],
+          "check": {
+            "question": "What specific change occurs during the condensation stage of the water cycle?",
+            "hint": "Think about the change in the state of the water.",
+            "answer": "Condensation changes water vapor into liquid droplets."
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "Evaporation changes liquid water into water vapor.",
+            "Condensation changes water vapor into liquid droplets.",
+            "Precipitation returns water from clouds to Earth's surface."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    },
+    {
+      "id": "computing-binary",
+      "passed": true,
+      "httpStatus": 200,
+      "elapsedMs": 21153,
+      "checks": {
+        "http200": true,
+        "domain": true,
+        "verification": true,
+        "consistency": true,
+        "detailedLessons": true,
+        "expectedContent": true,
+        "traceableEvidence": true
+      },
+      "expectedPatterns": [
+        "/powers of two/i",
+        "/8/i",
+        "/2/i",
+        "/1/i",
+        "/eleven|11/i"
+      ],
+      "subjectProfile": {
+        "domain": "computing",
+        "label": "Computing",
+        "taskType": "Computational representation",
+        "responseMode": "Evidence-guided explanation",
+        "guidance": "Trace inputs, representation, operations, and outputs in order; preserve exact code or notation and verify the result with a small worked check.",
+        "confidence": "high",
+        "answerVerification": {
+          "status": "source-checked",
+          "method": "Source quotation and claim-support review",
+          "note": "Bookmoth applied its computational representation method and tied the displayed teaching to exact source evidence.",
+          "expectedAnswer": ""
+        }
+      },
+      "evidenceReview": {
+        "status": "source-checked",
+        "acceptedLessons": 1,
+        "rejectedLessons": 0,
+        "note": "1 lesson was rebuilt from exact evidence after expanded wording failed the source gate. Every factual answer is tied to verbatim source statements. This verifies grounding in the supplied sources, not the independent accuracy of those sources."
+      },
+      "consistencyReview": {
+        "status": "passed",
+        "checks": {
+          "uniqueSourceIds": true,
+          "referencesValid": true,
+          "lessonEvidencePresent": true,
+          "reviewCountsMatch": true,
+          "researchCountMatches": true,
+          "requestedTranslationsPresent": true,
+          "subjectAnalysisComplete": true
+        },
+        "invalidSourceIds": [],
+        "note": "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      },
+      "sourceText": "Computing fundamentals\nBinary uses powers of two as place values.\nFrom right to left, the first four place values are 1, 2, 4, and 8.\nThe binary number 1011 has 1s in the 8, 2, and 1 places.",
+      "lessons": [
+        {
+          "term": "Binary",
+          "learningObjective": "Explain the supplied source statements about Binary without adding outside information.",
+          "directAnswer": "Binary uses powers of two as place values. From right to left, the first four place values are 1, 2, 4, and 8. The binary number 1011 has 1s in the 8, 2, and 1 places.",
+          "explanation": "The source gives 3 evidence statements for this lesson. It states: “Binary uses powers of two as place values.” It also states: “From right to left, the first four place values are 1, 2, 4, and 8.” It also states: “The binary number 1011 has 1s in the 8, 2, and 1 places.” These statements are the supported answer. Keep their wording in view while you compare them, and do not add a cause, purpose, or mechanism unless another source states it.",
+          "steps": [
+            {
+              "title": "Locate the evidence",
+              "explanation": "Open S1 and find the quoted statements before answering."
+            },
+            {
+              "title": "Read statement 1",
+              "explanation": "Read and say the exact source wording: “Binary uses powers of two as place values.”"
+            },
+            {
+              "title": "Read statement 2",
+              "explanation": "Read and say the exact source wording: “From right to left, the first four place values are 1, 2, 4, and 8.”"
+            },
+            {
+              "title": "Read statement 3",
+              "explanation": "Read and say the exact source wording: “The binary number 1011 has 1s in the 8, 2, and 1 places.”"
+            },
+            {
+              "title": "Explain the comparison",
+              "explanation": "Describe only what the quoted statements say. Keep any extra cause, purpose, or detail out of the answer."
+            },
+            {
+              "title": "Verify the answer",
+              "explanation": "Compare your answer with each quote and correct any changed, reversed, or added information."
+            }
+          ],
+          "whyItMatters": "This method keeps the lesson relevant to the supplied material and makes every subject statement easy to verify.",
+          "example": "Hide the evidence, answer “What does the source state about Binary?”, then reopen the source and check every word.",
+          "commonMistakes": [
+            {
+              "mistake": "Adding a likely cause, purpose, example, or detail that the source does not state.",
+              "correction": "Use the supported answer only: Binary uses powers of two as place values. From right to left, the first four place values are 1, 2, 4, and 8. The binary number 1011 has 1s in the 8, 2, and 1 places."
+            },
+            {
+              "mistake": "Mixing, changing, or reversing the evidence statements.",
+              "correction": "Return to S1 and read each quote in its original wording."
+            }
+          ],
+          "check": {
+            "question": "What does the supplied source state about Binary?",
+            "hint": "Recall the 3 quoted statements before reopening the evidence.",
+            "answer": "Binary uses powers of two as place values. From right to left, the first four place values are 1, 2, 4, and 8. The binary number 1011 has 1s in the 8, 2, and 1 places."
+          },
+          "sourceIds": [
+            "S1"
+          ],
+          "evidenceQuotes": [
+            "Binary uses powers of two as place values.",
+            "From right to left, the first four place values are 1, 2, 4, and 8.",
+            "The binary number 1011 has 1s in the 8, 2, and 1 places."
+          ],
+          "verification": "source-checked"
+        }
+      ]
+    }
+  ]
+}

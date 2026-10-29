@@ -6,9 +6,10 @@ import sharp from "sharp";
 const baseUrl = process.env.BOOKMOTH_TEST_URL || "http://127.0.0.1:4342";
 const requestedIds = new Set(process.argv.slice(2));
 const partialRun = requestedIds.size > 0;
+const runDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 const outputDir = path.resolve("docs/validation/subject-matrix-fixtures");
-const reportJson = path.resolve(`docs/validation/SUBJECT_MATRIX_LIVE_RESPONSE_2026-10-11${partialRun ? "-partial" : ""}.json`);
-const reportMarkdown = path.resolve(`docs/validation/SUBJECT_MATRIX_VALIDATION_2026-10-11${partialRun ? "-partial" : ""}.md`);
+const reportJson = path.resolve(`docs/validation/SUBJECT_MATRIX_LIVE_RESPONSE_${runDate}${partialRun ? "-partial" : ""}.json`);
+const reportMarkdown = path.resolve(`docs/validation/SUBJECT_MATRIX_VALIDATION_${runDate}${partialRun ? "-partial" : ""}.md`);
 
 const fixtures = [
   {
@@ -197,8 +198,16 @@ async function runFixture(fixture) {
   };
 }
 
+let provider;
+try {
+  const response = await fetch(`${baseUrl}/api/create`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  provider = await response.json();
+} catch (error) {
+  console.error(`Cannot reach the Bookmoth API at ${baseUrl}. Start Bookmoth before running the subject matrix. (${error.message})`);
+  process.exit(1);
+}
 await fs.mkdir(outputDir, { recursive: true });
-const provider = await fetch(`${baseUrl}/api/create`).then((response) => response.json());
 const results = [];
 const selectedFixtures = partialRun ? fixtures.filter((fixture) => requestedIds.has(fixture.id)) : fixtures;
 if (selectedFixtures.length === 0) throw new Error("No requested subject fixtures matched.");
@@ -245,7 +254,7 @@ const report = {
 await fs.writeFile(reportJson, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 
 const markdown = [
-  "# Bookmoth multi-subject live validation — 2026-10-11",
+  `# Bookmoth multi-subject live validation — ${runDate}`,
   "",
   `Provider: ${provider.provider || "unknown"} · ${provider.model || "unknown"}${provider.teachingModel ? ` + ${provider.teachingModel}` : ""}`,
   `Result: ${report.totals.passed}/${report.totals.cases} subject fixtures passed; repeatability ${stable === null ? "not run" : stable ? "passed" : "failed"}.`,

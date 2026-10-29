@@ -15,6 +15,119 @@ import {
   validateDeepLessons,
   validateSources,
 } from "../src/lib/bookmoth.js";
+import {
+  fetchOpenRouterFreeModels,
+  openRouterModelRequest,
+  requestOpenRouterChatCompletion,
+  selectOpenRouterFreeModels,
+} from "../src/lib/openrouter.js";
+
+function freeVisionModel(id, overrides = {}) {
+  return {
+    id,
+    architecture: { input_modalities: ["text", "image"] },
+    supported_parameters: ["temperature", "structured_outputs"],
+    pricing: { prompt: "0", completion: "0" },
+    expiration_date: null,
+    ...overrides,
+  };
+}
+
+test("OpenRouter fallback catalog keeps only active free vision models with structured output", () => {
+  const models = [
+    freeVisionModel("best:free"),
+    freeVisionModel("preferred:free"),
+    freeVisionModel("paid/vision:free", { pricing: { prompt: "0.000001", completion: "0" } }),
+    freeVisionModel("text-only:free", { architecture: { input_modalities: ["text"] } }),
+    freeVisionModel("no-json:free", { supported_parameters: ["temperature"] }),
+    freeVisionModel("expired:free", { expiration_date: "2026-01-01T00:00:00Z" }),
+  ];
+
+  assert.deepEqual(
+    selectOpenRouterFreeModels(models, "preferred:free", Date.parse("2026-10-29T12:00:00Z")),
+    ["preferred:free", "best:free", "openrouter/free"],
+  );
+});
+
+test("OpenRouter model list always retains a dynamic free router after ranked fallbacks", () => {
+  const models = Array.from({ length: 8 }, (_, index) => freeVisionModel(`model-${index}:free`));
+  const candidates = selectOpenRouterFreeModels(models, "model-5:free", Date.parse("2026-10-29T12:00:00Z"));
+
+  assert.deepEqual(candidates, [
+    "model-5:free",
+    "model-0:free",
+    "model-1:free",
+    "model-2:free",
+    "openrouter/free",
+  ]);
+});
+
+test("OpenRouter request encodes a native model fallback chain and reports the serving model", async () => {
+  assert.deepEqual(openRouterModelRequest(["primary:free", "backup:free", "openrouter/free"]), {
+    model: "primary:free",
+    models: ["backup:free", "openrouter/free"],
+  });
+  let requestBody;
+  let requestHeaders;
+  const result = await requestOpenRouterChatCompletion({
+    apiKey: "test-key",
+    modelCandidates: ["primary:free", "backup:free", "openrouter/free"],
+    payload: { messages: [{ role: "user", content: "Read this source." }] },
+    fetchImpl: async (_url, options) => {
+      requestHeaders = options.headers;
+      requestBody = JSON.parse(options.body);
+      return Response.json({ model: "backup:free", choices: [{ message: { content: "ok" } }] });
+    },
+  });
+
+  assert.equal(requestHeaders.Authorization, "Bearer test-key");
+  assert.equal(requestBody.model, "primary:free");
+  assert.deepEqual(requestBody.models, ["backup:free", "openrouter/free"]);
+  assert.equal(result.model, "backup:free");
+});
+
+test("OpenRouter model catalog uses the authenticated, capability-filtered index", async () => {
+  let requestedUrl;
+  let authHeader;
+  const result = await fetchOpenRouterFreeModels("private-test-key", async (url, options) => {
+    requestedUrl = new URL(url);
+    authHeader = options.headers.Authorization;
+    return Response.json({ data: [freeVisionModel("vision:free")] });
+  });
+
+  assert.equal(authHeader, "Bearer private-test-key");
+  assert.equal(requestedUrl.searchParams.get("input_modalities"), "image");
+  assert.equal(requestedUrl.searchParams.get("supported_parameters"), "structured_outputs");
+  assert.equal(requestedUrl.searchParams.get("sort"), "intelligence-high-to-low");
+  assert.equal(requestedUrl.searchParams.get("max_price"), "0");
+  assert.equal(result[0].id, "vision:free");
+});
+
+test("OpenRouter keeps provider errors inspectable for retry messaging", async () => {
+  await assert.rejects(
+    requestOpenRouterChatCompletion({
+      apiKey: "test-key",
+      modelCandidates: ["primary:free", "openrouter/free"],
+      payload: { messages: [] },
+      fetchImpl: async () => Response.json({ error: { message: "Rate limit reached" } }, { status: 429 }),
+    }),
+    (error) => error.status === 429 && error.message === "Rate limit reached",
+  );
+});
+
+test("OpenRouter network failures return a retryable service error without leaking credentials", async () => {
+  await assert.rejects(
+    requestOpenRouterChatCompletion({
+      apiKey: "private-test-key",
+      modelCandidates: ["primary:free", "openrouter/free"],
+      payload: { messages: [] },
+      fetchImpl: async () => { throw new TypeError("network offline"); },
+    }),
+    (error) => error.status === 503
+      && error.message.includes("could not reach OpenRouter")
+      && !error.message.includes("private-test-key"),
+  );
+});
 
 test("source validation rejects an empty set", () => {
   assert.equal(validateSources([]), "Add at least one screenshot or image.");
@@ -118,13 +231,24 @@ test("sample pack contains all public output types", () => {
   assert.ok(pack.reportSections.length > 0);
   assert.ok(pack.flashcards.length > 0);
   assert.ok(pack.practice.length > 0);
+  assert.deepEqual(pack.flashcards.map((card) => card.sourceIds), [["S1"], ["S1"], ["S1"]]);
+  assert.deepEqual(pack.practice.map((item) => item.sourceIds), [["S1"], ["S1"], ["S1"]]);
+  assert.equal(pack.practice.length, 3);
+  assert.match(pack.practice[0].question, /deeper depth/i);
+  assert.match(pack.practice[1].question, /freeze motion/i);
+  assert.match(pack.practice[2].question, /less visible noise/i);
+  assert.ok(pack.deepLessons.every((lesson) => lesson.steps.length >= 4));
+  assert.ok(pack.flashcards.every((card) => !/source point/i.test(card.front)));
+  assert.ok(pack.practice.every((item) => !/source point/i.test(item.question)));
   assert.ok(pack.collage.callouts.length > 0);
-  assert.ok(pack.trailMap.glowPoints.length > 0);
+  assert.equal(pack.trailMap.glowPoints.length, 3);
+  assert.ok(pack.trailMap.glowPoints.every((point) => point.label.includes("follow the tradeoff")));
   assert.ok(pack.trailMap.threads.every((thread) => thread.fromId && thread.toId));
   assert.ok(pack.trailMap.blindSpots.length > 0);
   assert.ok(pack.trailMap.recallLoop.length > 0);
   assert.equal(pack.consistencyReview.status, "passed");
   assert.equal(auditLearningPackConsistency(pack).status, "passed");
+  assert.match(pack.consistencyReview.note, /not independent factual correctness/i);
 });
 
 test("pack-wide consistency audit catches broken citations and research totals", () => {
@@ -138,6 +262,7 @@ test("pack-wide consistency audit catches broken citations and research totals",
   assert.deepEqual(audit.invalidSourceIds, ["S404"]);
   assert.equal(audit.checks.referencesValid, false);
   assert.equal(audit.checks.researchCountMatches, false);
+  assert.match(audit.note, /does not independently verify factual correctness/i);
 });
 
 test("markdown export includes verification language and citations", () => {

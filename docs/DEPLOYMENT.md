@@ -9,12 +9,14 @@ Bookmoth needs a server runtime because `/api/create` reads images and calls the
 3. Confirm **Framework Preset: Next.js** and leave **Root Directory** at the repository root.
 4. In **Environment Variables**, add these non-secret values for Production and Preview:
    - `BOOKMOTH_PROVIDER` = `openrouter`
-   - `OPENROUTER_MODEL` = `dots-studio/dots-3-note-preview:free`
+   - `OPENROUTER_MODEL` = `openrouter/free`
    - `OPENROUTER_FALLBACK_MODEL` = `openrouter/free`
 5. Leave `OPENROUTER_API_KEY` unset. Public users connect their own keys in the interface.
 6. Deploy the tested `main` branch.
 
-Bookmoth keeps a user-supplied key in that browser tab's `sessionStorage` and forwards it per request. It does not write the key to a Bookmoth database. The key and uploaded screenshots pass through the Vercel function to OpenRouter and its selected provider. Free access is rate-limited, provider availability can change, and this route is not anonymous or unlimited.
+Bookmoth keeps a user-supplied key in that browser tab's `sessionStorage` and forwards it per request. It does not write the key to a Bookmoth database. The key and uploaded screenshots pass through the Vercel function to OpenRouter and its selected provider. The connection check validates the key and queries OpenRouter's live catalog; it does not run image inference. At generation time Bookmoth checks for zero-cost models with image input and structured output, then sends an ordered model-fallback list with the dynamic free router as a final option. OpenRouter's returned model IDs are recorded in the response so Bookmoth can report which model handled image reading and teaching.
+
+Fallback can recover from an individual model or provider failure. It cannot bypass an account-wide quota, make free inference unlimited, or guarantee an available model. Each public learner must supply their own OpenRouter key. Model catalog rankings are routing hints, not Bookmoth-specific accuracy evidence.
 
 If the owner intentionally adds a shared provider key later, keep it server-side and never place it in GitHub files, screenshots, build logs, or a variable beginning with `NEXT_PUBLIC_`. Add rate limits, an abuse budget, and a privacy review before making shared-key generation public.
 
@@ -28,8 +30,8 @@ Before a production release:
    - `userKeyRequired` is `true`;
    - `ready` is `false` until the user connects a key;
    - `researchAvailable` is `false` and `translationAvailable` is `true`.
-3. Use the interface to connect a personal OpenRouter key. Do not paste it into an issue, chat, screenshot, or log.
-4. Upload one permitted, non-private screenshot and generate an English source-only pack.
+3. With a personal key connected, confirm the connection check reports whether the live compatible-model catalog loaded and lists fallback candidates. This checks the key/catalog, not image inference. Never paste the key into an issue, chat, screenshot, or log.
+4. Upload one permitted, non-private screenshot and generate an English source-only pack. Confirm the response reports the actual image-reading and teaching model IDs, including when fallback occurred.
 5. Generate a second pack with full source translation enabled.
 6. Check the extracted source text, cited source IDs, uncertainty labels, and subject-specific method against the image.
 7. Check desktop and phone widths, all six output tabs, Markdown export, JSON export, and the browser console.

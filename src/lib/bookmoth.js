@@ -618,8 +618,8 @@ export function auditLearningPackConsistency(value = {}) {
     checks,
     invalidSourceIds,
     note: passed
-      ? "Source IDs, lesson evidence, review counts, research totals, requested translations, and the subject-specific answer check agree across this pack."
-      : "One or more pack-wide checks did not agree. Review the Source check tab before relying on this material.",
+      ? "Source IDs resolve, lessons include evidence, counts and requested translations agree, and the subject route records its verification status. These checks confirm traceability and structure, not independent factual correctness."
+      : "Some source references, lesson evidence, counts, translations, or subject-routing checks need review. This audit does not independently verify factual correctness; review the Source check tab.",
   };
 }
 
@@ -1390,20 +1390,167 @@ export function sampleLearningPack() {
       ],
     },
   ];
-  const deepLessons = lessonBlueprints
-    .map((lesson) => buildSourceLockedDeepLesson(lesson, sources))
-    .filter(Boolean);
+  const deepLessons = [
+    {
+      term: "Aperture",
+      learningObjective: "Explain the results S1 links to wider or narrower aperture.",
+      directAnswer: lessonBlueprints[0].evidenceQuotes.join(" "),
+      explanation: "Aperture is the lens opening. S1 links a wider opening to more light and shallower depth, and a narrower opening to less light and deeper depth. Read both results together: this source connects an aperture setting to light and depth. It does not give an exact setting.",
+      steps: [
+        { title: "Pick a depth goal", explanation: "Read if the source points to wider or narrower; S1 links narrower with deeper depth." },
+        { title: "Check the light result", explanation: "Narrower pairs with less light; wider pairs with more light." },
+        { title: "Keep both results", explanation: "Keep both light and depth in the source comparison." },
+        { title: "Check the source detail", explanation: "S1 gives the effects and does not give an exact setting." },
+      ],
+      whyItMatters: "S1 connects depth and light in the same aperture comparison; use both results when reading the source.",
+      example: "For deeper depth, use the narrower comparison and remember its paired result: less light.",
+      commonMistakes: [
+        { mistake: "Checking only the light result for aperture.", correction: "S1 states both results for narrower: less light and deeper depth." },
+        { mistake: "Mixing the wider and narrower results.", correction: "Read both source statements in order and keep their results paired." },
+      ],
+      check: {
+        question: "What two results does S1 link to narrower aperture?",
+        hint: "Read the source statement about narrower aperture.",
+        answer: "Narrower: less light, deeper depth.",
+      },
+      sourceIds: ["S1"],
+      evidenceQuotes: lessonBlueprints[0].evidenceQuotes,
+      verification: "source-checked",
+    },
+    {
+      term: "Shutter speed",
+      learningObjective: "Explain how S1 pairs exposure time with light and motion results.",
+      directAnswer: lessonBlueprints[1].evidenceQuotes.join(" "),
+      explanation: "S1 describes shutter speed as exposure time. It links faster to less light and 'freezes motion,' and slower to more light and 'shows motion blur.' Read both results together. S1 does not state an exact speed.",
+      steps: [
+        { title: "Pick the motion result", explanation: "Faster freezes motion; slower shows motion blur." },
+        { title: "Read the light result", explanation: "Faster pairs with less light; slower pairs with more light." },
+        { title: "Compare both results", explanation: "Read both results for each shutter statement." },
+        { title: "Check the source detail", explanation: "S1 gives the effects and does not give an exact shutter speed." },
+      ],
+      whyItMatters: "S1 links motion and light results for each shutter speed; use both in the explanation.",
+      example: "If the priority is 'freezes motion,' use faster and remember S1 pairs it with less light.",
+      commonMistakes: [
+        { mistake: "Using faster for motion without checking light.", correction: "S1 pairs faster with less light." },
+        { mistake: "Remembering more light for slower, not motion blur.", correction: "S1 pairs slower with more light and motion blur." },
+      ],
+      check: {
+        question: "What two results does S1 link to faster shutter speed?",
+        hint: "Read the source statement about faster shutter speed.",
+        answer: "Faster: less light, freezes motion.",
+      },
+      sourceIds: ["S1"],
+      evidenceQuotes: lessonBlueprints[1].evidenceQuotes,
+      verification: "source-checked",
+    },
+    {
+      term: "ISO",
+      learningObjective: "Explain how S1 pairs higher or lower ISO with brightness, noise, and light.",
+      directAnswer: lessonBlueprints[2].evidenceQuotes.join(" "),
+      explanation: "S1 labels ISO as signal amplification. It links higher to brighter and more visible noise; lower is linked to less noise and needs more light. Read brightness and noise together, then read the light note for lower. S1 does not state an exact ISO value.",
+      steps: [
+        { title: "Compare higher and lower", explanation: "Read the two ISO statements in S1." },
+        { title: "Read the brightness result", explanation: "Higher is linked to brighter; lower is linked to less noise and needs more light." },
+        { title: "Read the noise result", explanation: "Higher is linked to more visible noise; lower is linked to less noise." },
+        { title: "Check the source detail", explanation: "S1 gives these effects and does not give an exact ISO value." },
+      ],
+      whyItMatters: "S1 pairs brightness and visible noise for higher ISO; read both results before applying the comparison.",
+      example: "If less noise is the priority, use lower ISO and remember S1 says it needs more light.",
+      commonMistakes: [
+        { mistake: "Using the brightness result without checking noise.", correction: "S1 pairs higher ISO with more visible noise and a brighter result." },
+        { mistake: "Reading only 'less noise' for lower ISO.", correction: "S1 also says lower ISO needs more light." },
+      ],
+      check: {
+        question: "What two results does S1 link to higher ISO?",
+        hint: "Read the source statement about higher ISO.",
+        answer: "Higher: brighter, more visible noise.",
+      },
+      sourceIds: ["S1"],
+      evidenceQuotes: lessonBlueprints[2].evidenceQuotes,
+      verification: "source-checked",
+    },
+  ];
 
   let sample = normalizeLearningPack(applySubjectQualityGate({
     ...base,
-    title: "Manual exposure: an evidence-locked review",
-    overview: "This sample turns three pairs of statements from the photography source into structured lessons. Factual answers keep the source wording visible instead of filling gaps with outside information.",
+    title: "Manual exposure: three linked controls",
+    overview: "Three practical lessons unpack the light, depth, motion, and noise comparisons in the photography source. Each answer shows its evidence and explains what the source does not say.",
     concepts: lessonBlueprints.map((lesson) => ({
       term: lesson.term,
       explanation: lesson.evidenceQuotes.join(" "),
       sourceIds: lesson.sourceIds,
     })),
-    depthSummary: "Three detailed lessons separate the exact source answer from the study method, recall check, common errors, and evidence used to verify it.",
+    reportSections: lessonBlueprints.map((lesson) => ({
+      heading: `${lesson.term}: source comparison`,
+      body: lesson.evidenceQuotes.join(" "),
+      sourceIds: lesson.sourceIds,
+    })),
+    flashcards: [
+      {
+        front: "Which two results change in S1's wider and narrower aperture comparison?",
+        back: lessonBlueprints[0].evidenceQuotes.join(" "),
+        sourceIds: ["S1"],
+      },
+      {
+        front: "What two results does S1 pair with faster shutter speed?",
+        back: lessonBlueprints[1].evidenceQuotes.join(" "),
+        sourceIds: ["S1"],
+      },
+      {
+        front: "What two effects does S1 connect with higher ISO?",
+        back: lessonBlueprints[2].evidenceQuotes.join(" "),
+        sourceIds: ["S1"],
+      },
+    ],
+    practice: [
+      {
+        question: "You want deeper depth. Which aperture direction does S1 point to, and what light result comes with it?",
+        hint: "Find the aperture line that names deeper depth.",
+        answer: "Narrower; S1 pairs it with less light.",
+        sourceIds: ["S1"],
+      },
+      {
+        question: "You want to freeze motion. Which shutter direction does S1 point to, and what light result comes with it?",
+        hint: "Find the shutter line that says it freezes motion.",
+        answer: "Faster; S1 pairs it with less light.",
+        sourceIds: ["S1"],
+      },
+      {
+        question: "You want less visible noise. Which ISO direction does S1 point to, and what light condition comes with it?",
+        hint: "Find the ISO line that says “less noise.”",
+        answer: "Lower; S1 says it needs more light.",
+        sourceIds: ["S1"],
+      },
+    ],
+    trailMap: {
+      glowPoints: lessonBlueprints.map((lesson, index) => ({
+        id: `G${index + 1}`,
+        label: `${lesson.term}: follow the tradeoff`,
+        whyItMatters: lesson.term === "Aperture"
+          ? "Track both light and depth in the wider and narrower lines."
+          : lesson.term === "Shutter speed"
+            ? "Track both light and motion in the faster and slower lines."
+            : "Track both brightness and visible noise in the higher and lower lines.",
+        sourceIds: lesson.sourceIds,
+      })),
+      threads: [{
+        fromId: "G1",
+        toId: "G2",
+        relationship: "S1 describes aperture, shutter speed, and ISO as connected controls that shape brightness, motion, and depth.",
+        sourceIds: ["S1"],
+      }],
+      blindSpots: [{
+        question: "How should these settings be combined for a particular photograph?",
+        reason: "The source describes the controls and their effects, but it does not give exact settings for a particular photo.",
+        sourceIds: ["S1"],
+      }],
+      recallLoop: [
+        "Cover the source and recall the two comparisons for aperture, shutter speed, and ISO.",
+        "Open S1 and check each statement against the image.",
+        "Explain which detail the source leaves unanswered before applying the notes to a new photo.",
+      ],
+    },
+    depthSummary: "Each lesson explains a source-defined term, compares both outcomes in its paired statements, applies one comparison to a practical goal, and marks the information the source leaves open.",
     deepLessons,
     evidenceReview: {
       status: "source-checked",
@@ -1413,7 +1560,7 @@ export function sampleLearningPack() {
     },
     collage: {
       title: "Manual exposure source board",
-      caption: "A compact review of the exact relationships stated in the sample source.",
+      caption: "A compact review of the exact relationships shown in the sample source.",
       callouts: lessonBlueprints.map((lesson) => ({
         text: `${lesson.term}: ${lesson.evidenceQuotes.join(" ")}`,
         sourceIds: lesson.sourceIds,

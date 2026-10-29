@@ -256,6 +256,7 @@ textarea::placeholder, input::placeholder { color: #81768a; }
 .consistency-summary b { color: #f2e9f3; font-size: .88rem; }
 .consistency-summary p { margin: 5px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.55; }
 .consistency-summary small { display: block; margin-top: 7px; color: var(--danger); font-size: .7rem; }
+.verification-note { margin: 9px 0 0; color: var(--muted); font-size: .76rem; line-height: 1.55; }
 .research-source-list { display: grid; gap: 7px; margin-top: 17px; padding-top: 16px; border-top: 1px solid var(--line); }
 .research-source-list a { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 10px 11px; border: 1px solid var(--line); border-radius: 6px; color: inherit; text-decoration: none; background: rgba(255,255,255,.02); }
 .research-source-list a:hover { border-color: rgba(168,136,255,.45); background: rgba(168,136,255,.05); }

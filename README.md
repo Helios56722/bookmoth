@@ -69,13 +69,15 @@ See the official [OpenAI authentication guidance](https://developers.openai.com/
 
 The public app can use a free OpenRouter model without placing a shared provider key in Bookmoth. Each learner creates an OpenRouter key, pastes it into Bookmoth, and checks the connection. The key stays in that browser tab's `sessionStorage`, is forwarded to Bookmoth's server route for each request, and is not written to a Bookmoth database or committed to GitHub.
 
-The current first choice is `dots-studio/dots-3-note-preview:free`, selected because it accepts images and structured output. OpenRouter marks that preview as retiring on December 31, 2026, so Bookmoth automatically retries through the multimodal `openrouter/free` router if the first model cannot complete the request. Free model access is rate-limited, model availability can change, and the selected provider may process or retain data under its own policy. This is not anonymous or unlimited service. The free route reads and explains uploaded material; it does not perform live web research.
+Bookmoth checks OpenRouter's live model catalog for models that accept images, support structured output, and have zero prompt and completion pricing. It prefers the configured model when it is currently eligible, then orders eligible fallbacks by OpenRouter's published intelligence index and includes the dynamic `openrouter/free` router as a final route. OpenRouter receives the candidate list and can move to the next model when a request fails. The API connection check validates the key and model catalog; only a real image-to-pack request verifies end-to-end inference. A catalog score does not prove Bookmoth-specific accuracy.
+
+Every public learner must connect their own OpenRouter API key. Free models and accounts are rate-limited; a fallback can recover from a model or provider outage, but it cannot bypass an account-wide request limit or guarantee uninterrupted service. OpenRouter and the selected model provider process uploaded screenshots under their own terms. The free route reads and explains uploaded material; it does not perform live web research. For private on-device analysis, use local Ollama.
 
 For private on-device analysis, use the local Ollama route instead.
 
 ### Public Vercel mode
 
-The hosted app defaults to the user-connected OpenRouter route. Set `BOOKMOTH_PROVIDER=openrouter`, `OPENROUTER_MODEL=dots-studio/dots-3-note-preview:free`, and `OPENROUTER_FALLBACK_MODEL=openrouter/free`. Do not add a shared `OPENROUTER_API_KEY` unless the project owner intentionally accepts the usage, privacy, rate-limit, and abuse-control responsibility.
+The hosted app defaults to the user-connected OpenRouter route. Set `BOOKMOTH_PROVIDER=openrouter`, `OPENROUTER_MODEL=openrouter/free`, and `OPENROUTER_FALLBACK_MODEL=openrouter/free`. The application discovers eligible free fallbacks at request time. Do not add a shared `OPENROUTER_API_KEY` unless the project owner intentionally accepts the usage, privacy, rate-limit, and abuse-control responsibility.
 
 All providers live behind `src/app/api/create/route.js` and return the same learning-pack schema. The OpenRouter route separates image extraction from evidence-locked teaching and preserves complete translation when requested. It stays grounded in the uploaded sources. The optional OpenAI research route can add live corroboration with traceable links when separately configured and funded. Source selection is based on authority and proximity to the claim rather than country: original-language Chinese sources are prioritized for Chinese-origin subjects, while every other subject receives the same original-language treatment.
 
@@ -91,7 +93,7 @@ Bookmoth is a Next.js application with a server API. GitHub Pages cannot run its
 
 1. Sign in to Vercel and import `Helios56722/bookmoth`.
 2. Keep the repository root as the project root. Vercel should detect Next.js.
-3. Add `BOOKMOTH_PROVIDER=openrouter`, `OPENROUTER_MODEL=dots-studio/dots-3-note-preview:free`, and `OPENROUTER_FALLBACK_MODEL=openrouter/free` as server-side environment variables for Production and Preview. Leave `OPENROUTER_API_KEY` unset for the user-connected-key design.
+3. Add `BOOKMOTH_PROVIDER=openrouter`, `OPENROUTER_MODEL=openrouter/free`, and `OPENROUTER_FALLBACK_MODEL=openrouter/free` as server-side environment variables for Production and Preview. Leave `OPENROUTER_API_KEY` unset for the user-connected-key design.
 4. Deploy the tested `main` branch.
 5. Verify `/api/create` reports `provider: openrouter` and `userKeyRequired: true`. In the public interface, connect a personal OpenRouter key and complete one permitted screenshot-to-pack test.
 

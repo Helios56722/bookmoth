@@ -13,6 +13,11 @@ import {
   validateDeepLessons,
   validateSources,
 } from "@/lib/bookmoth";
+import {
+  fetchOpenRouterFreeModels,
+  requestOpenRouterChatCompletion,
+  selectOpenRouterFreeModels,
+} from "@/lib/openrouter";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -562,7 +567,7 @@ function getProviderConfig(request = null) {
     const serverApiKey = process.env.OPENROUTER_API_KEY?.trim() || "";
     return {
       provider,
-      model: process.env.OPENROUTER_MODEL || "dots-studio/dots-3-note-preview:free",
+      model: process.env.OPENROUTER_MODEL || "openrouter/free",
       fallbackModel: process.env.OPENROUTER_FALLBACK_MODEL || "openrouter/free",
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: requestOpenRouterKey || serverApiKey,
@@ -619,10 +624,12 @@ function openRouterRouting() {
   };
 }
 
-async function extractSourcesWithOpenRouter(client, config, body) {
+async function extractSourcesWithOpenRouter(config, body, modelCandidates) {
   const language = requestedLanguage(body);
-  const response = await client.chat.completions.create({
-    model: config.model,
+  const response = await requestOpenRouterChatCompletion({
+    apiKey: config.apiKey,
+    modelCandidates,
+    payload: {
     messages: [{
       role: "user",
       content: [
@@ -646,64 +653,64 @@ async function extractSourcesWithOpenRouter(client, config, body) {
     provider: openRouterRouting(),
     temperature: 0,
     max_tokens: 8000,
+    },
   });
   const outputText = openRouterOutputText(response);
   if (!outputText) throw new ProviderError("OpenRouter did not return source extraction results.", 502);
   const parsed = JSON.parse(outputText);
-  return Array.isArray(parsed.sources)
-    ? parsed.sources.map((source) => finalizeSourceTranslation(source, body))
-    : [];
+  return {
+    sources: Array.isArray(parsed.sources)
+      ? parsed.sources.map((source) => finalizeSourceTranslation(source, body))
+      : [],
+    model: response.model || modelCandidates[0],
+  };
 }
 
 async function createWithOpenRouter(config, body) {
   if (!config.apiKey) {
     throw new ProviderError("Connect a free OpenRouter key before creating a learning pack.", 401);
   }
-  const client = new OpenAI({
+  let catalog = [];
+  try {
+    catalog = await fetchOpenRouterFreeModels(config.apiKey);
+  } catch (error) {
+    console.warn("Bookmoth could not refresh the OpenRouter free-model catalog; using its dynamic free router.", error);
+  }
+  const modelCandidates = selectOpenRouterFreeModels(catalog, config.model, Date.now(), config.fallbackModel);
+  config.modelCandidates = modelCandidates;
+
+  const extraction = await extractSourcesWithOpenRouter(config, body, modelCandidates);
+  const extractedSources = extraction.sources;
+  assertReadableEvidence(extractedSources);
+  const prompt = createPrompt(body, extractedSources);
+  const response = await requestOpenRouterChatCompletion({
     apiKey: config.apiKey,
-    baseURL: config.baseURL,
-    defaultHeaders: {
-      "HTTP-Referer": "https://bookmoth.vercel.app",
-      "X-OpenRouter-Title": "Bookmoth",
+    modelCandidates,
+    payload: {
+      messages: [{ role: "user", content: prompt }],
+      response_format: openRouterResponseFormat("bookmoth_learning_pack", packSchema),
+      provider: openRouterRouting(),
+      temperature: 0,
+      max_tokens: 16000,
     },
   });
-  const candidateModels = [...new Set([config.model, config.fallbackModel].filter(Boolean))];
-  let lastError = null;
-  for (const model of candidateModels) {
-    const candidateConfig = { ...config, model };
-    try {
-      const extractedSources = await extractSourcesWithOpenRouter(client, candidateConfig, body);
-      assertReadableEvidence(extractedSources);
-      const prompt = createPrompt(body, extractedSources);
-      const response = await client.chat.completions.create({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        response_format: openRouterResponseFormat("bookmoth_learning_pack", packSchema),
-        provider: openRouterRouting(),
-        temperature: 0,
-        max_tokens: 16000,
-      });
-      const outputText = openRouterOutputText(response);
-      if (!outputText) throw new ProviderError("OpenRouter did not return a learning pack.", 502);
-      const pack = JSON.parse(outputText);
-      pack.sources = extractedSources;
-      pack.researchSources = [];
-      pack.languageProfile = buildLanguageProfile(body, extractedSources);
-      pack.researchProfile = {
-        requested: false,
-        performed: false,
-        sourceCount: 0,
-        note: "The free OpenRouter route is grounded in the uploaded material and does not perform a live web search.",
-      };
-      config.model = model;
-      return pack;
-    } catch (error) {
-      if (error?.status === 401) throw error;
-      lastError = error;
-      console.warn(`Bookmoth OpenRouter model ${model} failed; trying the next configured free route.`, error);
-    }
-  }
-  throw lastError || new ProviderError("No configured OpenRouter free model completed the request.", 503);
+  const outputText = openRouterOutputText(response);
+  if (!outputText) throw new ProviderError("OpenRouter did not return a learning pack.", 502);
+  const pack = JSON.parse(outputText);
+  pack.sources = extractedSources;
+  pack.researchSources = [];
+  pack.languageProfile = buildLanguageProfile(body, extractedSources);
+  pack.researchProfile = {
+    requested: false,
+    performed: false,
+    sourceCount: 0,
+    note: "The free OpenRouter route is grounded in the uploaded material and does not perform a live web search.",
+  };
+  config.extractionModel = extraction.model;
+  config.teachingModel = response.model || modelCandidates[0];
+  config.model = config.teachingModel;
+  config.fallbackUsed = extraction.model !== modelCandidates[0] || config.teachingModel !== modelCandidates[0];
+  return pack;
 }
 
 function createPrompt(body, extractedSources = null) {
@@ -1342,6 +1349,7 @@ export async function GET(request) {
     if (config.provider === "openrouter") {
       let ready = false;
       let keyDetail = "Paste a free OpenRouter API key to enable image reading and source-locked study guides.";
+      let catalog = [];
       if (config.apiKey) {
         try {
           const response = await fetch("https://openrouter.ai/api/v1/key", {
@@ -1349,17 +1357,32 @@ export async function GET(request) {
             signal: globalThis.AbortSignal.timeout(8000),
           });
           ready = response.ok;
-          keyDetail = response.ok
-            ? "OpenRouter key verified. Free models have provider rate limits and availability can change."
-            : "OpenRouter rejected this key. Check it in OpenRouter, then try again.";
+          if (response.ok) {
+            try {
+              catalog = await fetchOpenRouterFreeModels(config.apiKey);
+              const compatibleCount = catalog.filter((model) =>
+                selectOpenRouterFreeModels([model], null).some((id) => id === model.id),
+              ).length;
+              keyDetail = compatibleCount
+                ? `Key and model catalog verified. ${compatibleCount} free image and structured-output models are listed; Bookmoth uses an ordered failover chain. This does not test answer quality, and account limits still apply.`
+                : "OpenRouter accepted this key, but the catalog check found no compatible free image models. Bookmoth can still try the dynamic free router; a real pack is needed to confirm it works.";
+            } catch {
+              keyDetail = "OpenRouter accepted this key. Its model catalog could not be checked, so Bookmoth will try the dynamic free router. A real pack is needed to verify image reading and answer quality.";
+            }
+          } else {
+            keyDetail = "OpenRouter rejected this key. Check it in OpenRouter, then try again.";
+          }
         } catch {
           keyDetail = "Bookmoth could not reach OpenRouter to verify the key. Try again in a moment.";
         }
       }
+      const modelCandidates = selectOpenRouterFreeModels(catalog, config.model, Date.now(), config.fallbackModel);
       return Response.json({
         provider: "openrouter",
-        model: config.model,
-        fallbackModel: config.fallbackModel,
+        model: modelCandidates[0],
+        fallbackModels: modelCandidates.slice(1),
+        modelCatalogChecked: catalog.length > 0,
+        modelFallbackEnabled: modelCandidates.length > 1,
         local: false,
         ready,
         userKeyRequired: config.userKeyRequired,
@@ -1507,7 +1530,11 @@ export async function POST(request) {
       provider: {
         name: config.provider,
         model: config.model,
+        extractionModel: config.extractionModel || config.model,
         teachingModel: config.teachingModel || config.model,
+        fallbackUsed: Boolean(config.fallbackUsed),
+        modelFallbackEnabled: Boolean(config.modelCandidates?.length > 1),
+        fallbackModels: config.modelCandidates?.slice(1) || [],
         local: config.local,
         researchAvailable: config.provider === "openai",
         userKeyRequired: Boolean(config.userKeyRequired),
@@ -1537,14 +1564,20 @@ export async function POST(request) {
     }
     if (activeProvider === "openrouter" && error?.status === 429) {
       return Response.json(
-        { error: "The selected free model is rate-limited right now. Wait for the OpenRouter allowance to reset, or use local Ollama." },
+        { error: "OpenRouter's free request limit was reached or every compatible route is rate-limited. A model fallback cannot bypass account-wide limits; wait for the allowance to reset or use local Ollama." },
         { status: 429 },
+      );
+    }
+    if (activeProvider === "openrouter" && Number(error?.status) >= 500) {
+      return Response.json(
+        { error: "OpenRouter's free image-capable routes could not complete this request. Try again later; account-wide limits may still apply." },
+        { status: Number(error.status) === 504 ? 504 : 503 },
       );
     }
 
     return Response.json(
       { error: error instanceof ProviderError ? error.message : "Bookmoth could not create this learning pack. Check the source images and try again." },
-      { status: error instanceof ProviderError ? error.status : 500 },
+      { status: error instanceof ProviderError ? error.status : Number(error?.status) || 500 },
     );
   }
 }

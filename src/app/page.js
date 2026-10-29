@@ -50,7 +50,7 @@ function MothMark({ compact = false }) {
   );
 }
 
-function HowToDialog({ onClose, onStart }) {
+function HowToDialog({ onClose, onStart, researchAvailable }) {
   const closeButton = useRef(null);
   const dialog = useRef(null);
 
@@ -91,14 +91,14 @@ function HowToDialog({ onClose, onStart }) {
         <ol className="howto-steps">
           <li><b>1</b><div><h3>Add clear source images</h3><p>Upload one to eight screenshots or photos. Fill the frame, avoid glare, and keep every word readable.</p></div></li>
           <li><b>2</b><div><h3>Describe the lesson and your goal</h3><p>Tell Bookmoth the topic and what you need to understand, remember, compare, or practice. These details guide the teaching without replacing the source.</p></div></li>
-          <li><b>3</b><div><h3>Choose language and evidence settings</h3><p>Select the output language. Request a full translation when needed, and use global research when you want independent corroboration.</p></div></li>
-          <li><b>4</b><div><h3>Create, then check the evidence first</h3><p>Open Source check before studying. Review the transcription, translation, uncertainty labels, and linked research beside the original material.</p></div></li>
+          <li><b>3</b><div><h3>Choose language and evidence settings</h3><p>Select the output language; request a full translation when needed. {researchAvailable === true ? "If you enable global research, Bookmoth can add independent sources for corroboration." : researchAvailable === false ? "Live web research is not available on this connection, so Bookmoth will use your uploaded material." : "Live web research depends on your connected AI provider; free OpenRouter and local Ollama use uploaded material only."}</p></div></li>
+          <li><b>4</b><div><h3>Create, then check the evidence first</h3><p>Open Source check before studying. Review the transcription, translation, and uncertainty labels beside the original material. {researchAvailable === true ? "Research links appear when global research is enabled." : researchAvailable === false ? "Live research links are not available on this connection." : "Research links appear only when the connected provider supports and completes a search."}</p></div></li>
           <li><b>5</b><div><h3>Study in the format that fits</h3><p>Use the detailed guide, Lantern trail, report, practice set, or visual board. Export Markdown or JSON when you want to keep the result.</p></div></li>
         </ol>
 
         <div className="howto-notes">
           <article><span>Better input</span><p>Use close, straight, well-lit images that show the full question, heading, labels, and instructions.</p></article>
-          <article><span>Honest limits</span><p>Bookmoth refuses weak evidence and marks uncertainty. Always compare important claims with the original source.</p></article>
+          <article><span>Honest limits</span><p>When text or support is unclear, Bookmoth may limit a lesson and show uncertainty. Its checks do not prove that the original source is correct; verify important claims there.</p></article>
         </div>
 
         <div className="howto-actions">
@@ -345,12 +345,18 @@ export default function Home() {
           ready: true,
           local: data.provider.local,
           provider: data.provider.name,
-          model: data.provider.model,
+          model: data.provider.extractionModel || data.provider.model,
           teachingModel: data.provider.teachingModel,
+          fallbackModels: data.provider.fallbackModels || [],
+          fallbackUsed: data.provider.fallbackUsed,
           researchAvailable: data.provider.researchAvailable,
           userKeyRequired: data.provider.userKeyRequired,
           translationAvailable: true,
-          detail: data.provider.local ? "Learning pack created on this PC." : "Learning pack created with the configured cloud provider.",
+          detail: data.provider.local
+            ? "Learning pack created on this PC."
+            : data.provider.fallbackUsed
+              ? "A model fallback completed the learning pack after the first route failed. The account-wide free quota still applies."
+              : "Learning pack created. OpenRouter's returned model IDs show which routes handled image reading and teaching.",
         });
       }
       setActiveTab("guide");
@@ -460,7 +466,7 @@ export default function Home() {
         <div className="header-actions"><button className="header-help" type="button" onClick={() => setHowToOpen(true)} aria-haspopup="dialog">How to use</button><a className="header-link" href="https://github.com/Helios56722/bookmoth" target="_blank" rel="noreferrer">GitHub ↗</a></div>
       </header>
 
-      {howToOpen && <HowToDialog onClose={() => setHowToOpen(false)} onStart={() => { setHowToOpen(false); document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" }); }} />}
+      {howToOpen && <HowToDialog onClose={() => setHowToOpen(false)} onStart={() => { setHowToOpen(false); document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" }); }} researchAvailable={providerStatus ? providerStatus.researchAvailable === true : null} />}
 
       <section className="hero">
         <div className="hero-copy">
@@ -584,7 +590,7 @@ export default function Home() {
                   <button className="button" type="button" disabled={checkingProvider || !openRouterKey.trim()} onClick={() => checkOpenRouterKey()}>{checkingProvider ? "Checking…" : "Check connection"}</button>
                   {providerStatus.ready && <button className="text-button" type="button" onClick={disconnectOpenRouter}>Disconnect</button>}
                 </div>
-                <p>Free access is rate-limited and model availability can change. Uploaded screenshots are sent to OpenRouter and its selected model provider. Use local Ollama for private, on-device analysis.</p>
+                <p>Bookmoth checks the live catalog for free image and structured-output models, then sends an ordered fallback list. If a model or provider fails, OpenRouter can try the next compatible option. This cannot bypass an account-wide free quota; each learner needs their own OpenRouter key. Uploaded screenshots pass through OpenRouter and the model provider. Use local Ollama for private, on-device analysis.</p>
               </div>
             )}
 
@@ -593,6 +599,9 @@ export default function Home() {
               <div>
                 <b>{providerStatus ? `${providerStatus.local ? "Local" : "Cloud"} AI · ${providerStatus.model}${providerStatus.teachingModel && providerStatus.teachingModel !== providerStatus.model ? ` + ${providerStatus.teachingModel}` : ""}` : "Checking AI provider…"}</b>
                 <small>{providerStatus?.detail || "Confirming the model before images are submitted."}</small>
+                {providerStatus?.provider === "openrouter" && providerStatus.fallbackModels?.length > 0 && (
+                  <small>Fallback order: {providerStatus.fallbackModels.join(" → ")}</small>
+                )}
               </div>
             </div>
 
@@ -614,7 +623,7 @@ export default function Home() {
               <div className="waiting-state">
                 <MothMark compact />
                 <h3>Your learning pack will land here.</h3>
-                <p>You will get multiple ways to work with the same source material. Every useful claim stays connected to an image ID.</p>
+        <p>You will get multiple ways to work with the same source material, with source IDs that help you trace supporting claims.</p>
                 <div className="output-preview-grid">
                   {outputTabs.slice(0, 4).map(([key, label]) => <span key={key}><b>{label}</b><small>Ready after analysis</small></span>)}
                 </div>
@@ -626,13 +635,14 @@ export default function Home() {
                     <div className="export-actions"><button type="button" onClick={exportMarkdown}>Markdown ↓</button><button type="button" onClick={exportJson}>JSON ↓</button></div>
                   </div>
                   <div className="verification-ledger" aria-label="Verification summary">
-                    <div><span>Source grounding</span><b>{pack.evidenceReview.status === "source-checked" ? "Passed" : "Limited"}</b></div>
-                    <div><span>Consistency audit</span><b>{pack.consistencyReview?.status === "passed" ? "Passed" : "Review needed"}</b></div>
+                    <div><span>Lesson evidence</span><b>{pack.evidenceReview.status === "source-checked" ? "Source-checked" : "Limited"}</b></div>
+                    <div><span>Pack integrity</span><b>{pack.consistencyReview?.status === "passed" ? "Checks agree" : "Review needed"}</b></div>
                     <div><span>Subject method</span><b>{pack.subjectProfile?.label || "General learning"}</b></div>
                     <div><span>Global research</span><b>{pack.researchProfile?.performed ? `${pack.researchProfile.sourceCount} linked sources` : "Not performed"}</b></div>
                     <div><span>Output language</span><b>{pack.languageProfile?.outputLanguage || "English"}</b></div>
                     <div><span>Full translation</span><b>{pack.languageProfile?.fullSourceTranslation ? "Included" : "Not requested"}</b></div>
                   </div>
+                  <p className="verification-note">These checks confirm source links and pack structure. They do not independently prove every fact.</p>
                 <div className="tab-list" role="tablist" aria-label="Learning pack views">
                   {outputTabs.map(([key, label]) => <button key={key} role="tab" aria-selected={activeTab === key} type="button" onClick={() => setActiveTab(key)}>{label}</button>)}
                 </div>

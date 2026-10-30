@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T15:24:33.130Z",
+  "generatedAt": "2026-10-30T15:50:21.436Z",
   "artifact": "Bookmoth deterministic visual study board PNG",
   "status": "VISUALLY REVIEWED",
   "results": [
@@ -24,7 +24,8 @@
         "hasTitle": true,
         "hasSourceMaterialLabel": true,
         "hasQuickReview": true,
-        "calloutSourcesExist": true
+        "calloutSourcesExist": true,
+        "hasCalculationPanel": true
       },
       "passed": true
     },
@@ -49,10 +50,37 @@
         "hasTitle": true,
         "hasSourceMaterialLabel": true,
         "hasQuickReview": true,
-        "calloutSourcesExist": true
+        "calloutSourcesExist": true,
+        "hasCalculationPanel": true
+      },
+      "passed": true
+    },
+    {
+      "id": "science-calculation",
+      "output": "docs/validation/BOOKMOTH_SCIENCE-CALCULATION.png",
+      "bytes": 199946,
+      "metadata": {
+        "width": 1600,
+        "height": 1100,
+        "channels": 4,
+        "hasAlpha": true,
+        "alphaMin": 255,
+        "alphaMax": 255
+      },
+      "sourceCount": 2,
+      "checks": {
+        "dimensions": true,
+        "channels": true,
+        "opaque": true,
+        "nonEmpty": true,
+        "hasTitle": true,
+        "hasSourceMaterialLabel": true,
+        "hasQuickReview": true,
+        "calloutSourcesExist": true,
+        "hasCalculationPanel": true
       },
       "passed": true
     }
   ],
-  "note": "This validates Bookmoth's source-grounded collage renderer and PNG export path. It does not prove the truth of source content or the quality of an external AI image model."
+  "note": "This validates Bookmoth's source-grounded collage renderer, science calculation board, and PNG export path. It does not prove the truth of source content or the quality of an external AI image model."
 }

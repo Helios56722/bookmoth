@@ -20,6 +20,7 @@ import {
   validateDeepLessons,
   validateSources,
 } from "../src/lib/bookmoth.js";
+import { compareVersions } from "../src/lib/app-version.js";
 import {
   fetchOpenRouterFreeModels,
   openRouterModelRequest,
@@ -52,6 +53,12 @@ test("OpenRouter fallback catalog keeps only active free vision models with stru
     selectOpenRouterFreeModels(models, "preferred:free", Date.parse("2026-10-29T12:00:00Z")),
     ["preferred:free", "best:free", "openrouter/free"],
   );
+});
+
+test("version checker orders releases and tolerates a leading v", () => {
+  assert.equal(compareVersions("0.2.0", "0.1.0"), 1);
+  assert.equal(compareVersions("v0.2.0", "0.2.0"), 0);
+  assert.equal(compareVersions("0.1.9", "0.2.0"), -1);
 });
 
 test("OpenRouter model list always retains a dynamic free router after ranked fallbacks", () => {

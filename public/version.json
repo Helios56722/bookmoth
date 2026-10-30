@@ -1,0 +1,8 @@
+{
+  "version": "0.2.0",
+  "channel": "stable",
+  "releasedAt": "2026-10-30",
+  "minimumVersion": "0.1.0",
+  "updateUrl": "https://github.com/Helios56722/bookmoth/releases",
+  "notes": "Multi-source science lessons, checked equation boards, and the Bookmoth update checker."
+}

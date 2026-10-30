@@ -525,7 +525,7 @@ function buildVerifiedScienceCalculationLessonForSource(source, index) {
       || text.split(/\r?\n/).find((line) => line.trim().length >= 8)?.trim();
     if (!quote) return null;
     const explanation = `${result.formula}. Substitute the supplied values: ${result.substitution} = ${result.answer}. Repeating the arithmetic confirms the result and the units.`;
-    return makeVerifiedLesson({
+    const verified = makeVerifiedLesson({
       term: result.title,
       objective: `Calculate ${result.title.toLowerCase()} from the supplied formula and values, including units.`,
       answer: result.answer,
@@ -536,13 +536,25 @@ function buildVerifiedScienceCalculationLessonForSource(source, index) {
         ["Calculate", `The arithmetic gives ${result.answer}.`],
         ["Check units", `The units reduce to ${result.answer.split(" ").slice(1).join(" ")}.`],
       ],
-      whyItMatters: "Writing the formula, substitution, arithmetic, and units makes the science calculation easy to audit.",
+      whyItMatters: result.title === "Density"
+        ? "Keeping mass, volume, and cubic units together makes the density result easy to audit."
+        : result.title === "Molarity"
+          ? "Keeping moles, liters, and concentration units together makes the molarity result easy to audit."
+          : "Writing the formula, substitution, arithmetic, and units makes the science calculation easy to audit.",
       example: `${result.substitution} = ${result.answer}.`,
       checkQuestion: `Using the supplied values, what is ${result.title.toLowerCase()}?`,
       checkHint: "Write the formula and substitute the values with their units.",
       sourceId: source.sourceId || `S${index + 1}`,
       quote,
     });
+    verified.visual = {
+      label: result.title,
+      formula: result.formula,
+      substitution: result.substitution,
+      answer: result.answer,
+      sourceIds: [source.sourceId || `S${index + 1}`],
+    };
+    return verified;
 }
 
 export function buildVerifiedScienceCalculationLessons(sources = []) {
@@ -651,9 +663,12 @@ function applyVerifiedLessonsToOutputs(result, verifiedLessons, depthSummary, ev
   result.reportSections = lessons.map((lesson) => ({ heading: lesson.term, body: `${lesson.directAnswer}\n\n${lesson.explanation}`, sourceIds: lesson.sourceIds }));
   result.flashcards = lessons.map((lesson) => ({ front: lesson.check.question, back: lesson.check.answer, sourceIds: lesson.sourceIds }));
   result.practice = lessons.map((lesson) => ({ question: lesson.check.question, hint: lesson.check.hint, answer: lesson.check.answer, sourceIds: lesson.sourceIds }));
+  const calculationCards = verifiedLessons.map((item) => item.visual).filter(Boolean);
   result.collage = {
+    variant: calculationCards.length === verifiedLessons.length ? "science-calculation" : "source-board",
     title: single ? lessons[0].term : "Chemistry calculation review",
     caption: single ? lessons[0].directAnswer : `${lessons.length} source-checked calculations`,
+    calculationCards,
     callouts: lessons.map((lesson) => ({ text: lesson.whyItMatters, sourceIds: lesson.sourceIds })),
   };
   result.reviewPlan = [
@@ -947,8 +962,16 @@ export function normalizeLearningPack(value = {}) {
       sourceIds: safeArray(item?.sourceIds).map((sourceId) => safeString(sourceId)).filter(Boolean),
     })),
     collage: {
+      variant: safeLabel(value.collage?.variant, "source-board"),
       title: safeLabel(value.collage?.title, "Visual review board"),
       caption: safeString(value.collage?.caption, "A visual index of your source material."),
+      calculationCards: safeArray(value.collage?.calculationCards).map((card) => ({
+        label: safeLabel(card?.label, "Calculation"),
+        formula: safeString(card?.formula, "Formula unavailable."),
+        substitution: safeString(card?.substitution, "Substitution unavailable."),
+        answer: safeString(card?.answer, "Answer unavailable."),
+        sourceIds: safeArray(card?.sourceIds).map((item) => safeString(item)).filter(Boolean),
+      })),
       callouts: safeArray(value.collage?.callouts).map((callout) => ({
         text: safeString(callout?.text, "Review this source."),
         sourceIds: safeArray(callout?.sourceIds).map((item) => safeString(item)).filter(Boolean),

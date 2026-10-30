@@ -20,6 +20,7 @@ The project is built for students, hobby learners, and people developing a new s
 - See whether a pack is source-grounded only or has also been cross-checked with live web evidence.
 - Export the pack as Markdown or JSON.
 - Export a visual source collage as PNG.
+- See the running app version in the footer and check it against the canonical release manifest before studying.
 - Start a new local workspace session at any time; this clears the current uploads and generated pack while preserving the connected provider configuration. A fresh workspace does not reset a model provider's account-level rate limits or quotas.
 
 ## What makes Bookmoth its own product
@@ -98,6 +99,10 @@ Bookmoth is a Next.js application with a server API. GitHub Pages cannot run its
 5. Verify `/api/create` reports `provider: openrouter` and `userKeyRequired: true`. In the public interface, connect a personal OpenRouter key and complete one permitted screenshot-to-pack test.
 
 The local Ollama provider is intentionally not a public-hosting backend; a Vercel function cannot reach a model running on Jaylan's PC. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the point-and-click release and verification checklist.
+
+### Release version checks
+
+The canonical public release manifest is [`public/version.json`](public/version.json). When releasing a new build, update `package.json`, `src/lib/app-version.js`, and `public/version.json` together, then deploy the same commit to Vercel and GitHub. The footer checks the deployed manifest without caching it and reports whether the current app is up to date, behind, or temporarily unable to check. An available update is a release signal and reload action; it is not a silent installer or a service-worker migration. A user with an older cached build must reload after the new deployment is live.
 
 ## Privacy boundary
 

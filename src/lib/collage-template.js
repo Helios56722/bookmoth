@@ -77,7 +77,100 @@ function calloutCards(callouts) {
   }).join("");
 }
 
+function calculationSourceCards(sources) {
+  const visible = sources.slice(0, 4);
+  const columns = visible.length === 1 ? 1 : 2;
+  const rows = Math.ceil(visible.length / columns);
+  const gap = 18;
+  const x0 = 90;
+  const y0 = 284;
+  const availableWidth = 888;
+  const availableHeight = rows === 1 ? 360 : 530;
+  const cellWidth = (availableWidth - gap * (columns - 1)) / columns;
+  const cellHeight = (availableHeight - gap * (rows - 1)) / rows;
+
+  return visible.map((source, index) => {
+    const x = x0 + (index % columns) * (cellWidth + gap);
+    const y = y0 + Math.floor(index / columns) * (cellHeight + gap);
+    const imageHeight = cellHeight - 66;
+    return `<g>
+      <rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" rx="18" fill="#0f0b15" stroke="#5b3d68" stroke-width="2"/>
+      <image x="${x + 12}" y="${y + 12}" width="${cellWidth - 24}" height="${imageHeight - 12}" preserveAspectRatio="xMinYMin meet" href="${escapeXml(source.dataUrl)}"/>
+      <rect x="${x + 1}" y="${y + cellHeight - 65}" width="${cellWidth - 2}" height="64" fill="#2b2037"/>
+      <text x="${x + 18}" y="${y + cellHeight - 37}" class="micro">S${index + 1}</text>
+      <text x="${x + 60}" y="${y + cellHeight - 37}" class="label">${escapeXml(source.name.slice(0, 34))}</text>
+      <text x="${x + 60}" y="${y + cellHeight - 16}" class="source-note">Original source · compare in Source check</text>
+    </g>`;
+  }).join("");
+}
+
+function calculationCards(cards) {
+  const visible = cards.slice(0, 4);
+  const count = Math.max(visible.length, 1);
+  const gap = 12;
+  const startY = 330;
+  const availableHeight = 510;
+  const height = (availableHeight - gap * (count - 1)) / count;
+  return visible.map((item, index) => {
+    const y = startY + index * (height + gap);
+    const formula = wrapText(item.formula, 30, 2);
+    const substitution = wrapText(item.substitution, 38, 2);
+    const answerY = y + height - 30;
+    return `<g>
+      <rect x="1066" y="${y}" width="440" height="${height}" rx="16" class="calc-card"/>
+      <text x="1088" y="${y + 30}" class="calc-source">${escapeXml(item.sourceIds?.join(" · ") || "CHECK SOURCE")}</text>
+      <text x="1088" y="${y + 58}" class="calc-label">${escapeXml(item.label)}</text>
+      ${textLines(formula, 1088, y + 92, 25, "calc-formula")}
+      ${textLines(substitution, 1088, y + Math.min(143, height - 65), 22, "calc-substitution")}
+      <rect x="${1088}" y="${answerY - 26}" width="${Math.min(390, 120 + String(item.answer).length * 10)}" height="34" rx="17" class="answer-pill"/>
+      <text x="1106" y="${answerY - 3}" class="calc-answer">${escapeXml(item.answer)}</text>
+    </g>`;
+  }).join("");
+}
+
+function buildCalculationCollageSvg(collage, sources) {
+  const title = wrapText(collage.title, 36, 2);
+  const caption = wrapText(collage.caption, 72, 2);
+  const sourceCount = Math.min(sources.length, 4);
+  const cards = Array.isArray(collage.calculationCards) ? collage.calculationCards : [];
+  const captionY = 88 + (title.length - 1) * 64 + 46;
+  const studyRhythm = sourceCount <= 2 ? `<g>
+      <rect x="90" y="690" width="888" height="184" rx="18" fill="#2b2037" stroke="#5b3d68" stroke-width="2"/>
+      <text x="118" y="728" class="micro">STUDY RHYTHM</text>
+      <text x="118" y="766" class="label">Read the formula, substitute the values, then audit the units.</text>
+      <text x="118" y="820" class="calc-source">01  READ</text><text x="350" y="820" class="calc-source">02  SUBSTITUTE</text><text x="650" y="820" class="calc-source">03  VERIFY</text>
+      <path d="M205 814 H315 M520 814 H615" stroke="#f0b976" stroke-width="2"/><path d="M308 808 l10 6 -10 6 M608 808 l10 6 -10 6" fill="none" stroke="#f0b976" stroke-width="2"/>
+    </g>` : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+    <defs>
+      <radialGradient id="glow" cx="90%" cy="0%" r="58%"><stop offset="0" stop-color="#6c4144" stop-opacity=".72"/><stop offset="1" stop-color="#130e1b" stop-opacity="0"/></radialGradient>
+      <style>
+        .title{font:600 58px Georgia,serif;fill:#f7efe5}.sub{font:25px Arial,sans-serif;fill:#c9bbcf}.micro{font:700 18px Arial,sans-serif;letter-spacing:1.5px;fill:#f0b976}.label{font:700 18px Arial,sans-serif;fill:#f5e6d7}.source-note{font:15px Arial,sans-serif;fill:#b8a9bf}.panel-title{font:600 34px Georgia,serif;fill:#36243e}.panel-copy{font:20px Arial,sans-serif;fill:#705f78}.calc-source{font:700 15px Arial,sans-serif;letter-spacing:1px;fill:#8a5f20}.calc-label{font:700 21px Arial,sans-serif;fill:#36243e}.calc-formula{font:700 22px Arial,sans-serif;fill:#4a3154}.calc-substitution{font:18px Arial,sans-serif;fill:#705f78}.calc-card{fill:#fffaf1;stroke:#dac7b0;stroke-width:2}.answer-pill{fill:#f0b976}.calc-answer{font:700 19px Arial,sans-serif;fill:#2b2037}.footer{font:600 24px Georgia,serif;fill:#f7efe5}.footer-small{font:20px Arial,sans-serif;fill:#baa9c9}
+      </style>
+    </defs>
+    <rect width="1600" height="1100" fill="#130e1b"/><rect width="1600" height="1100" fill="url(#glow)"/>
+    ${textLines(title, 64, 88, 64, "title")}
+    ${textLines(caption, 64, captionY, 34, "sub")}
+    <text x="1536" y="82" text-anchor="end" class="micro">BOOKMOTH · VISUAL STUDY BOARD</text>
+    <g opacity=".35" fill="none" stroke="#f0b976" stroke-width="2"><ellipse cx="1460" cy="110" rx="54" ry="18" transform="rotate(-24 1460 110)"/><ellipse cx="1460" cy="110" rx="54" ry="18" transform="rotate(24 1460 110)"/><circle cx="1460" cy="110" r="9" fill="#f0b976"/></g>
+    <rect x="64" y="210" width="940" height="730" rx="24" fill="#201628" stroke="#4a3854" stroke-width="2"/>
+    <text x="90" y="248" class="micro">SOURCE SNAPSHOTS · ${sourceCount} ${sourceCount === 1 ? "ITEM" : "ITEMS"}</text>
+    ${calculationSourceCards(sources)}
+    ${studyRhythm}
+    <rect x="1036" y="210" width="500" height="730" rx="24" fill="#f6efe4" stroke="#f0b976" stroke-width="2"/>
+    <text x="1066" y="260" class="panel-title">Checked equations</text>
+    <text x="1066" y="294" class="panel-copy">Formula · substitute · verify</text>
+    ${calculationCards(cards)}
+    <rect y="1000" width="1600" height="100" fill="#2c2035"/>
+    <text x="64" y="1058" class="footer">Built from your sources. Review Source check before you study.</text>
+    <text x="1536" y="1058" text-anchor="end" class="footer-small">bookmoth · open learning studio</text>
+  </svg>`;
+}
+
 export function buildCollageSvg(collage, sources) {
+  if (collage?.variant === "science-calculation" && Array.isArray(collage.calculationCards) && collage.calculationCards.length > 0) {
+    return buildCalculationCollageSvg(collage, sources);
+  }
   const title = wrapText(collage.title, 36, 2);
   const caption = wrapText(collage.caption, 72, 2);
   const sourceCount = Math.min(sources.length, 4);

@@ -10,6 +10,7 @@ import {
   validateSources,
 } from "@/lib/bookmoth";
 import { buildCollageSvg } from "@/lib/collage-template";
+import { APP_VERSION, VERSION_SOURCES, compareVersions } from "@/lib/app-version";
 
 const outputTabs = [
   ["guide", "Study guide"],
@@ -47,6 +48,28 @@ function MothMark({ compact = false }) {
         sizes={compact ? "54px" : "280px"}
       />
     </span>
+  );
+}
+
+function VersionChecker({ status, onCheck, onReload }) {
+  const label = status.state === "checking"
+    ? "Checking for updates…"
+    : status.state === "update"
+      ? `Update available · v${status.latest}`
+      : status.state === "offline"
+        ? "Update check unavailable"
+        : status.state === "current"
+          ? "Up to date"
+          : "Check for updates";
+  return (
+    <div className="version-checker" role="status" aria-live="polite">
+      <span>Bookmoth v{APP_VERSION}</span>
+      <span className="version-checker-dot" aria-hidden="true">·</span>
+      <span>{label}</span>
+      {status.state === "update"
+        ? <button type="button" onClick={onReload}>Reload to update</button>
+        : <button type="button" onClick={onCheck} disabled={status.state === "checking"}>{status.state === "current" ? "Check again" : "Check now"}</button>}
+    </div>
   );
 }
 
@@ -242,8 +265,36 @@ export default function Home() {
   const [exportMessage, setExportMessage] = useState("");
   const [howToOpen, setHowToOpen] = useState(false);
   const [sessionNumber, setSessionNumber] = useState(1);
+  const [versionStatus, setVersionStatus] = useState({ state: "idle", latest: APP_VERSION });
   const fileInput = useRef(null);
   const cameraInput = useRef(null);
+
+  async function checkForUpdates() {
+    setVersionStatus({ state: "checking", latest: APP_VERSION });
+    for (const source of VERSION_SOURCES) {
+      try {
+        const response = await fetch(`${source}?bookmoth=${encodeURIComponent(APP_VERSION)}`, { cache: "no-store" });
+        if (!response.ok) continue;
+        const manifest = await response.json();
+        if (!manifest?.version) continue;
+        const comparison = compareVersions(manifest.version, APP_VERSION);
+        setVersionStatus({
+          state: comparison > 0 ? "update" : "current",
+          latest: String(manifest.version),
+          notes: manifest.notes || "",
+          updateUrl: manifest.updateUrl || "",
+        });
+        return;
+      } catch {
+        // Try the next canonical source before reporting the check as unavailable.
+      }
+    }
+    setVersionStatus({ state: "offline", latest: APP_VERSION });
+  }
+
+  useEffect(() => {
+    checkForUpdates();
+  }, []);
 
   const totalSize = useMemo(
     () => sources.reduce((sum, source) => sum + source.size, 0),
@@ -677,7 +728,7 @@ export default function Home() {
                   {activeTab === "trail" && <div className="content-stack trail-view"><div className="trail-intro"><div><p className="eyebrow"><span /> Evidence map</p><h4>Follow the ideas. Notice the dark.</h4></div><p>Glow points are supported ideas. Threads show source-backed connections. Blind spots stay visible when the screenshots cannot finish the explanation.</p></div><div className="glow-grid">{pack.trailMap.glowPoints.map((point, index) => <article className="glow-point" key={`${point.id}-${index}`}><div><b>{point.id}</b><SourcePills ids={point.sourceIds} /></div><h5>{point.label}</h5><p>{point.whyItMatters}</p></article>)}</div><h4>Threads</h4><div className="thread-list">{pack.trailMap.threads.map((thread, index) => <article key={`${thread.fromId}-${thread.toId}-${index}`}><b>{thread.fromId}</b><span aria-hidden="true">→</span><b>{thread.toId}</b><p>{thread.relationship}</p></article>)}</div><h4>Blind spots</h4><div className="blind-list">{pack.trailMap.blindSpots.length ? pack.trailMap.blindSpots.map((spot, index) => <article key={`${spot.question}-${index}`}><div><span aria-hidden="true">?</span><h5>{spot.question}</h5><SourcePills ids={spot.sourceIds} /></div><p>{spot.reason}</p></article>) : <p className="helper-copy">No source gap was identified. Verify the full pack before relying on it.</p>}</div><h4>Recall loop</h4><ol className="review-list">{pack.trailMap.recallLoop.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ol></div>}
                   {activeTab === "report" && <div className="content-stack"><h4>Structured report</h4>{pack.reportSections.map((item, index) => <article className="report-section" key={`${item.heading}-${index}`}><div><h5>{item.heading}</h5><SourcePills ids={item.sourceIds} /></div><p>{item.body}</p></article>)}</div>}
                   {activeTab === "practice" && <div className="content-stack"><h4>Flashcards</h4><div className="flashcard-grid">{pack.flashcards.map((item, index) => <details key={`${item.front}-${index}`}><summary>{item.front}</summary><p>{item.back}</p><SourcePills ids={item.sourceIds} /></details>)}</div><h4>Practice questions</h4>{pack.practice.map((item, index) => <details className="practice-item" key={`${item.question}-${index}`}><summary><span>{index + 1}</span>{item.question}</summary><p><b>Hint:</b> {item.hint}</p><p><b>Answer:</b> {item.answer}</p><SourcePills ids={item.sourceIds} /></details>)}</div>}
-                  {activeTab === "collage" && <div className="content-stack"><div className="collage-heading"><div><h4>{pack.collage.title}</h4><p>{pack.collage.caption}</p><p className="collage-clarity">Source-grounded board. It arranges your uploaded images and checked notes; it does not create replacement artwork.</p>{exportMessage && <p className="export-status" role="status" aria-live="polite">{exportMessage}</p>}</div><button type="button" onClick={exportCollage} disabled={exporting}>{exporting ? "Rendering…" : "Download PNG ↓"}</button></div><div className="collage-board"><section className="collage-sources" aria-label="Source material"><p>Source material · {sources.length} {sources.length === 1 ? "item" : "items"}</p><div className="collage-grid">{sources.map((source, index) => <figure key={source.id}><NextImage src={source.dataUrl} alt={`Source S${index + 1}: ${source.name}`} width={800} height={600} unoptimized /><figcaption><b>S{index + 1}</b><span>{source.name}</span></figcaption></figure>)}</div></section><aside className="collage-review"><h5>Quick review</h5><p>Explain each point in your own words, then check it against the source.</p><ul className="callout-list">{pack.collage.callouts.map((item, index) => <li key={`${item.text}-${index}`}><SourcePills ids={item.sourceIds} /><span>{item.text}</span></li>)}</ul></aside></div></div>}
+                  {activeTab === "collage" && <div className="content-stack"><div className="collage-heading"><div><h4>{pack.collage.title}</h4><p>{pack.collage.caption}</p><p className="collage-clarity">Source-grounded board. It arranges your uploaded images and checked notes; it does not create replacement artwork.</p>{exportMessage && <p className="export-status" role="status" aria-live="polite">{exportMessage}</p>}</div><button type="button" onClick={exportCollage} disabled={exporting}>{exporting ? "Rendering…" : "Download PNG ↓"}</button></div>{pack.collage.variant === "science-calculation" && <section className="calculation-rail" aria-label="Verified calculations"><div className="calculation-rail-heading"><div><p>Checked equations</p><h5>Formula · substitute · verify</h5></div><span>Source checked</span></div><div className="calculation-rail-grid">{pack.collage.calculationCards.map((item, index) => <article key={`${item.label}-${index}`}><SourcePills ids={item.sourceIds} /><h6>{item.label}</h6><strong>{item.formula}</strong><p>{item.substitution}</p><b>{item.answer}</b></article>)}</div></section>}<div className="collage-board"><section className="collage-sources" aria-label="Source material"><p>Source material · {sources.length} {sources.length === 1 ? "item" : "items"}</p><div className="collage-grid">{sources.map((source, index) => <figure key={source.id}><NextImage src={source.dataUrl} alt={`Source S${index + 1}: ${source.name}`} width={800} height={600} unoptimized /><figcaption><b>S{index + 1}</b><span>{source.name}</span></figcaption></figure>)}</div></section><aside className="collage-review"><h5>Quick review</h5><p>Explain each point in your own words, then check it against the source.</p><ul className="callout-list">{pack.collage.callouts.map((item, index) => <li key={`${item.text}-${index}`}><SourcePills ids={item.sourceIds} /><span>{item.text}</span></li>)}</ul></aside></div></div>}
                   {activeTab === "sources" && <div className="content-stack source-check-view"><h4>Source, translation, and research check</h4><p className="helper-copy">Low confidence and unclear text are review prompts. Machine translation and web corroboration improve coverage, but neither replaces the original source or qualified review.</p><section className={`research-summary ${pack.researchProfile?.performed ? "performed" : "source-only"}`}><div><span aria-hidden="true">{pack.researchProfile?.performed ? "✓" : "i"}</span><div><b>{pack.researchProfile?.performed ? "Global corroboration completed" : "Source-only pack"}</b><p>{pack.researchProfile?.note}</p></div></div>{pack.researchSources?.length > 0 && <div className="research-source-list">{pack.researchSources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.id}><span>{source.id}</span><div><b>{source.title}</b><small>{source.publisher} · {source.language}</small></div><em>Open ↗</em></a>)}</div>}</section><section className={`consistency-summary ${pack.consistencyReview?.status === "passed" ? "passed" : "needs-review"}`}><span aria-hidden="true">{pack.consistencyReview?.status === "passed" ? "✓" : "!"}</span><div><b>{pack.consistencyReview?.status === "passed" ? "Internal consistency checks passed" : "Consistency review needed"}</b><p>{pack.consistencyReview?.note}</p>{pack.consistencyReview?.invalidSourceIds?.length > 0 && <small>Unknown source IDs: {pack.consistencyReview.invalidSourceIds.join(", ")}</small>}</div></section>{pack.sources.map((source, index) => <article className="source-extract" key={`${source.sourceId}-${index}`}><div><div><h5>{source.sourceId} · {source.sourceTitle}</h5><small>{source.sourceType === "web-research" ? "Corroboration evidence" : `Detected language: ${source.detectedLanguage}`}</small></div><span className={`confidence ${source.confidence}`}>{source.confidence} confidence</span></div><section><b>Original extracted text</b><p>{source.extractedText}</p></section>{source.translatedText && <section className="translation-block"><div><b>Full {source.translationLanguage} translation</b><span className={`confidence ${source.translationConfidence}`}>{source.translationConfidence} confidence</span></div><p>{source.translatedText}</p><small>Machine translation: verify names, formulas, quotations, and technical terms against the original.</small></section>}{source.unclearText.length > 0 && <div className="unclear"><b>Unclear in the image</b>{source.unclearText.map((item, itemIndex) => <span key={`${item}-${itemIndex}`}>{item}</span>)}</div>}</article>)}{pack.cautions.length > 0 && <div className="caution-box"><b>Check before relying on this</b>{pack.cautions.map((item, index) => <p key={`${item}-${index}`}>{item}</p>)}</div>}</div>}
                 </div>
               </>
@@ -701,7 +752,7 @@ export default function Home() {
         <ul><li><b>MIT licensed</b><span>Study, improve, or self-host it.</span></li><li><b>Portable exports</b><span>Keep Markdown, JSON, and collage files.</span></li><li><b>Provider boundary</b><span>Replace the AI service without rebuilding the interface.</span></li><li><b>Mobile roadmap</b><span>Camera capture, share sheet, and offline review come next.</span></li></ul>
       </section>
 
-      <footer><a className="brand" href="#top"><MothMark compact /><span><strong>Bookmoth</strong><small>follow the light of a useful idea</small></span></a><p>Open-source learning software. Verify AI output against your sources.</p></footer>
+      <footer><a className="brand" href="#top"><MothMark compact /><span><strong>Bookmoth</strong><small>follow the light of a useful idea</small></span></a><p>Open-source learning software. Verify AI output against your sources.</p><VersionChecker status={versionStatus} onCheck={checkForUpdates} onReload={() => globalThis.location.reload()} /></footer>
     </main>
   );
 }

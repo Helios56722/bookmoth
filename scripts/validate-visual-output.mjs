@@ -26,6 +26,19 @@ const sources = await Promise.all(sourceFiles.map(async ([name, file]) => {
   };
 }));
 
+const chemistrySources = await Promise.all([
+  ["chemistry-molarity.png", "docs/validation/subject-matrix-fixtures/chemistry-molarity.png"],
+  ["chemistry-density.png", "docs/validation/subject-matrix-fixtures/chemistry-density.png"],
+].map(async ([name, file]) => {
+  const data = await fs.readFile(path.join(root, file));
+  const metadata = await sharp(data).metadata();
+  return {
+    name,
+    dataUrl: `data:image/png;base64,${data.toString("base64")}`,
+    metadata: { width: metadata.width, height: metadata.height, channels: metadata.channels },
+  };
+}));
+
 const baseCollage = {
   title: "Manual exposure at a glance",
   caption: "Use the source and four checkpoints to connect camera settings with visible results.",
@@ -53,6 +66,23 @@ const cases = [
       ],
     },
   },
+  {
+    id: "science-calculation",
+    sources: chemistrySources,
+    collage: {
+      variant: "science-calculation",
+      title: "Chemistry calculation review: evidence-locked study guide",
+      caption: "2 source-checked calculations",
+      calculationCards: [
+        { label: "Molarity", formula: "molarity = moles ÷ liters", substitution: "0.5 mol ÷ 2 L", answer: "0.25 mol/L", sourceIds: ["S1"] },
+        { label: "Density", formula: "density = mass ÷ volume", substitution: "24 g ÷ 8 cm³", answer: "3 g/cm³", sourceIds: ["S2"] },
+      ],
+      callouts: [
+        { text: "Keep moles, liters, and concentration units together.", sourceIds: ["S1"] },
+        { text: "Keep mass, volume, and cubic units together.", sourceIds: ["S2"] },
+      ],
+    },
+  },
 ];
 
 const results = [];
@@ -69,13 +99,18 @@ for (const item of cases) {
     channels: metadata.channels >= 3,
     opaque: !metadata.hasAlpha || (alpha?.min === 255 && alpha?.max === 255),
     nonEmpty: stat.size > 50_000,
-    hasTitle: svg.includes(item.collage.title),
-    hasSourceMaterialLabel: svg.includes(`SOURCE MATERIAL · ${item.sources.length} ${item.sources.length === 1 ? "ITEM" : "ITEMS"}`),
-    hasQuickReview: svg.includes("Quick review"),
+    hasTitle: item.collage.variant === "science-calculation"
+      ? svg.includes("Chemistry calculation review")
+      : svg.includes(item.collage.title),
+    hasSourceMaterialLabel: item.collage.variant === "science-calculation"
+      ? svg.includes(`SOURCE SNAPSHOTS · ${item.sources.length} ${item.sources.length === 1 ? "ITEM" : "ITEMS"}`)
+      : svg.includes(`SOURCE MATERIAL · ${item.sources.length} ${item.sources.length === 1 ? "ITEM" : "ITEMS"}`),
+    hasQuickReview: item.collage.variant === "science-calculation" ? svg.includes("Checked equations") : svg.includes("Quick review"),
     calloutSourcesExist: item.collage.callouts.every((callout) => (callout.sourceIds ?? []).every((id) => {
       const sourceIndex = Number.parseInt(String(id).replace(/^S/, ""), 10);
       return Number.isInteger(sourceIndex) && sourceIndex >= 1 && sourceIndex <= item.sources.length;
     })),
+    hasCalculationPanel: item.collage.variant !== "science-calculation" || (svg.includes("Checked equations") && svg.includes("0.25 mol/L") && svg.includes("3 g/cm³")),
   };
   results.push({
     id: item.id,
@@ -93,7 +128,7 @@ const report = {
   artifact: "Bookmoth deterministic visual study board PNG",
   status: results.every((item) => item.passed) ? "VISUALLY REVIEWED" : "REJECTED",
   results,
-  note: "This validates Bookmoth's source-grounded collage renderer and PNG export path. It does not prove the truth of source content or the quality of an external AI image model.",
+  note: "This validates Bookmoth's source-grounded collage renderer, science calculation board, and PNG export path. It does not prove the truth of source content or the quality of an external AI image model.",
 };
 
 await fs.writeFile(path.join(outputDir, "IMAGE_OUTPUT_VALIDATION_2026-10-30.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");

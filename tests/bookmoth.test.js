@@ -10,6 +10,7 @@ import {
   buildVerifiedLinearEquationLesson,
   buildVerifiedPythonAccumulatorLesson,
   buildVerifiedScienceCalculationLesson,
+  buildVerifiedScienceCalculationLessons,
   findUnsupportedLessonVocabulary,
   inferSubjectProfile,
   learningPackToMarkdown,
@@ -481,6 +482,32 @@ test("bounded science solvers independently check common formula calculations an
     assert.equal(result.verification.status, "verified", extractedText);
     assert.equal(result.verification.expectedAnswer, expectedAnswer, extractedText);
   }
+});
+
+test("science quality gate keeps multiple verified calculations in one study pack", () => {
+  const sources = [
+    {
+      sourceId: "S1",
+      extractedText: "Chemistry: molarity calculation.\nMolarity = moles of solute / liters of solution.\nA solution contains 0.5 mol of solute in 2 L of solution.",
+    },
+    {
+      sourceId: "S2",
+      extractedText: "Chemistry calculation.\nDensity = mass / volume.\nA sample has a mass of 24 g and a volume of 8 cm^3.",
+    },
+  ];
+  const lessons = buildVerifiedScienceCalculationLessons(sources);
+  assert.equal(lessons.length, 2);
+  assert.deepEqual(lessons.map((item) => item.verification.expectedAnswer), ["0.25 mol/L", "3 g/cm³"]);
+
+  const base = buildEvidenceLockedPack(sources, "Study density and molarity.");
+  const gated = normalizeLearningPack(applySubjectQualityGate(base, sources, "Chemistry", "Study density and molarity."));
+  assert.equal(gated.deepLessons.length, 2);
+  assert.deepEqual(gated.deepLessons.map((lesson) => lesson.sourceIds[0]), ["S1", "S2"]);
+  assert.equal(gated.evidenceReview.acceptedLessons, 2);
+  assert.equal(gated.practice.length, 2);
+  assert.equal(gated.subjectProfile.answerVerification.status, "verified");
+  assert.match(gated.subjectProfile.answerVerification.expectedAnswer, /0\.25 mol\/L/);
+  assert.match(gated.subjectProfile.answerVerification.expectedAnswer, /3 g\/cm³/);
 });
 
 test("bounded Python loop tracer and regular past-tense passive transform verify supported patterns", () => {

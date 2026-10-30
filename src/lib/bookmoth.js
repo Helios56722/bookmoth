@@ -488,8 +488,7 @@ export function buildVerifiedBasicMathLesson(sources = []) {
   return null;
 }
 
-export function buildVerifiedScienceCalculationLesson(sources = []) {
-  for (const [index, source] of (Array.isArray(sources) ? sources : []).entries()) {
+function buildVerifiedScienceCalculationLessonForSource(source, index) {
     const text = source?.extractedText || "";
     let result;
     const mass = text.match(/mass\s*(?:=|of|is)?\s*(\d+(?:\.\d+)?)\s*(kg|g)\b/i);
@@ -521,10 +520,10 @@ export function buildVerifiedScienceCalculationLesson(sources = []) {
       result = { title: "Net force", formula: "F = mass × acceleration", substitution: `${kg[1]} kg × ${acceleration[1]} m/s²`, answer: `${formatMathNumber(value)} N` };
     }
 
-    if (!result || !Number.isFinite(Number(result.answer.match(/^-?\d+(?:\.\d+)?/)?.[0]))) continue;
+    if (!result || !Number.isFinite(Number(result.answer.match(/^-?\d+(?:\.\d+)?/)?.[0]))) return null;
     const quote = text.split(/\r?\n/).find((line) => new RegExp(result.title.split(" ")[0], "i").test(line) && /=|:/.test(line))?.trim()
       || text.split(/\r?\n/).find((line) => line.trim().length >= 8)?.trim();
-    if (!quote) continue;
+    if (!quote) return null;
     const explanation = `${result.formula}. Substitute the supplied values: ${result.substitution} = ${result.answer}. Repeating the arithmetic confirms the result and the units.`;
     return makeVerifiedLesson({
       term: result.title,
@@ -544,8 +543,16 @@ export function buildVerifiedScienceCalculationLesson(sources = []) {
       sourceId: source.sourceId || `S${index + 1}`,
       quote,
     });
-  }
-  return null;
+}
+
+export function buildVerifiedScienceCalculationLessons(sources = []) {
+  return (Array.isArray(sources) ? sources : [])
+    .map((source, index) => buildVerifiedScienceCalculationLessonForSource(source, index))
+    .filter(Boolean);
+}
+
+export function buildVerifiedScienceCalculationLesson(sources = []) {
+  return buildVerifiedScienceCalculationLessons(sources)[0] || null;
 }
 
 export function buildVerifiedPythonAccumulatorLesson(sources = []) {
@@ -621,25 +628,32 @@ export function buildVerifiedActivePassiveLesson(sources = []) {
 }
 
 function applyVerifiedLessonToOutputs(result, verified, depthSummary, evidenceNote) {
-  const lesson = verified.lesson;
-  const sourceIds = lesson.sourceIds;
-  result.deepLessons = [lesson];
+  applyVerifiedLessonsToOutputs(result, [verified], depthSummary, evidenceNote);
+}
+
+function applyVerifiedLessonsToOutputs(result, verifiedLessons, depthSummary, evidenceNote) {
+  const lessons = verifiedLessons.map((verified) => verified.lesson);
+  const single = lessons.length === 1;
+  result.deepLessons = lessons;
   result.depthSummary = depthSummary;
-  result.concepts = [{ term: lesson.term, explanation: lesson.explanation, sourceIds }];
-  result.evidenceReview = { status: "source-checked", acceptedLessons: 1, rejectedLessons: 0, note: evidenceNote };
+  result.concepts = lessons.map((lesson) => ({ term: lesson.term, explanation: lesson.explanation, sourceIds: lesson.sourceIds }));
+  result.evidenceReview = { status: "source-checked", acceptedLessons: lessons.length, rejectedLessons: 0, note: evidenceNote };
   result.trailMap = {
-    glowPoints: [{ id: "G1", label: lesson.term, whyItMatters: lesson.whyItMatters, sourceIds }],
+    glowPoints: lessons.map((lesson, index) => ({ id: `G${index + 1}`, label: lesson.term, whyItMatters: lesson.whyItMatters, sourceIds: lesson.sourceIds })),
     threads: [],
     blindSpots: [],
-    recallLoop: [lesson.check.question, "Answer from memory, then compare your steps with the worked explanation."],
+    recallLoop: [
+      ...lessons.map((lesson) => lesson.check.question),
+      "Answer from memory, then compare your steps with the worked explanation.",
+    ],
   };
-  result.reportSections = [{ heading: lesson.term, body: `${lesson.directAnswer}\n\n${lesson.explanation}`, sourceIds }];
-  result.flashcards = [{ front: lesson.check.question, back: lesson.check.answer, sourceIds }];
-  result.practice = [{ question: lesson.check.question, hint: lesson.check.hint, answer: lesson.check.answer, sourceIds }];
+  result.reportSections = lessons.map((lesson) => ({ heading: lesson.term, body: `${lesson.directAnswer}\n\n${lesson.explanation}`, sourceIds: lesson.sourceIds }));
+  result.flashcards = lessons.map((lesson) => ({ front: lesson.check.question, back: lesson.check.answer, sourceIds: lesson.sourceIds }));
+  result.practice = lessons.map((lesson) => ({ question: lesson.check.question, hint: lesson.check.hint, answer: lesson.check.answer, sourceIds: lesson.sourceIds }));
   result.collage = {
-    title: lesson.term,
-    caption: lesson.directAnswer,
-    callouts: [{ text: lesson.whyItMatters, sourceIds }],
+    title: single ? lessons[0].term : "Chemistry calculation review",
+    caption: single ? lessons[0].directAnswer : `${lessons.length} source-checked calculations`,
+    callouts: lessons.map((lesson) => ({ text: lesson.whyItMatters, sourceIds: lesson.sourceIds })),
   };
   result.reviewPlan = [
     "Work the problem once without looking at the answer.",
@@ -674,15 +688,28 @@ export function applySubjectQualityGate(pack = {}, sources = [], context = "", g
     return result;
   }
   if (profile.domain === "science") {
-    const verifiedScience = buildVerifiedScienceCalculationLesson(sources);
-    if (verifiedScience) {
-      applyVerifiedLessonToOutputs(
+    const verifiedScience = buildVerifiedScienceCalculationLessons(sources);
+    if (verifiedScience.length > 0) {
+      applyVerifiedLessonsToOutputs(
         result,
         verifiedScience,
-        "This science calculation uses a supplied formula and values, with the arithmetic and units checked independently.",
-        "The calculation was derived from the formula and values transcribed from the source, then independently recomputed with its units.",
+        verifiedScience.length === 1
+          ? "This science calculation uses a supplied formula and values, with the arithmetic and units checked independently."
+          : "These science calculations use supplied formulas and values, with each arithmetic result and its units checked independently.",
+        verifiedScience.length === 1
+          ? "The calculation was derived from the formula and values transcribed from the source, then independently recomputed with its units."
+          : "Each calculation was derived from the formula and values transcribed from its source, then independently recomputed with its units.",
       );
-      result.subjectProfile = { ...profile, answerVerification: verifiedScience.verification };
+      const verification = verifiedScience.map((item) => item.verification);
+      result.subjectProfile = {
+        ...profile,
+        answerVerification: {
+          status: "verified",
+          method: "Deterministic calculation and independent recomputation",
+          note: verification.map((item) => item.note).join(" "),
+          expectedAnswer: verification.map((item) => item.expectedAnswer).join("; "),
+        },
+      };
       return result;
     }
   }

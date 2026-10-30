@@ -111,6 +111,7 @@ for (const item of cases) {
       return Number.isInteger(sourceIndex) && sourceIndex >= 1 && sourceIndex <= item.sources.length;
     })),
     hasCalculationPanel: item.collage.variant !== "science-calculation" || (svg.includes("Checked equations") && svg.includes("0.25 mol/L") && svg.includes("3 g/cm³")),
+    hasStudyRhythm: item.collage.variant !== "science-calculation" || (svg.includes("STUDY RHYTHM") && svg.includes("01  READ") && svg.includes("02  SUBSTITUTE") && svg.includes("03  VERIFY")),
   };
   results.push({
     id: item.id,

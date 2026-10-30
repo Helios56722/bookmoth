@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T15:50:21.436Z",
+  "generatedAt": "2026-10-30T15:51:54.407Z",
   "artifact": "Bookmoth deterministic visual study board PNG",
   "status": "VISUALLY REVIEWED",
   "results": [
@@ -25,7 +25,8 @@
         "hasSourceMaterialLabel": true,
         "hasQuickReview": true,
         "calloutSourcesExist": true,
-        "hasCalculationPanel": true
+        "hasCalculationPanel": true,
+        "hasStudyRhythm": true
       },
       "passed": true
     },
@@ -51,7 +52,8 @@
         "hasSourceMaterialLabel": true,
         "hasQuickReview": true,
         "calloutSourcesExist": true,
-        "hasCalculationPanel": true
+        "hasCalculationPanel": true,
+        "hasStudyRhythm": true
       },
       "passed": true
     },
@@ -77,7 +79,8 @@
         "hasSourceMaterialLabel": true,
         "hasQuickReview": true,
         "calloutSourcesExist": true,
-        "hasCalculationPanel": true
+        "hasCalculationPanel": true,
+        "hasStudyRhythm": true
       },
       "passed": true
     }

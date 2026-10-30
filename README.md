@@ -125,6 +125,8 @@ npm run build
 npm run validate:subjects
 # Deterministic PNG collage layout and export gate:
 npm run validate:visuals
+# Visible UI copy and typography boundary gate:
+npm run validate:copy
 ```
 
 The repository's automated workflow runs the same test, lint, and production-build checks on pushes and pull requests.

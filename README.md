@@ -123,6 +123,8 @@ npm run lint
 npm run build
 # With the production server running on port 4342:
 npm run validate:subjects
+# Deterministic PNG collage layout and export gate:
+npm run validate:visuals
 ```
 
 The repository's automated workflow runs the same test, lint, and production-build checks on pushes and pull requests.

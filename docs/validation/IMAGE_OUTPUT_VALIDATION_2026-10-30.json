@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-10-30T15:15:15.690Z",
+  "artifact": "Bookmoth deterministic visual study board PNG",
+  "status": "VISUALLY REVIEWED",
+  "results": [
+    {
+      "id": "single-source",
+      "output": "docs/validation/BOOKMOTH_SINGLE-SOURCE.png",
+      "bytes": 690899,
+      "metadata": {
+        "width": 1600,
+        "height": 1100,
+        "channels": 4,
+        "hasAlpha": true,
+        "alphaMin": 255,
+        "alphaMax": 255
+      },
+      "sourceCount": 1,
+      "checks": {
+        "dimensions": true,
+        "channels": true,
+        "opaque": true,
+        "nonEmpty": true,
+        "hasTitle": true,
+        "hasSourceMaterialLabel": true,
+        "hasQuickReview": true,
+        "calloutSourcesExist": true
+      },
+      "passed": true
+    },
+    {
+      "id": "four-source-stress",
+      "output": "docs/validation/BOOKMOTH_FOUR-SOURCE-STRESS.png",
+      "bytes": 708232,
+      "metadata": {
+        "width": 1600,
+        "height": 1100,
+        "channels": 4,
+        "hasAlpha": true,
+        "alphaMin": 255,
+        "alphaMax": 255
+      },
+      "sourceCount": 4,
+      "checks": {
+        "dimensions": true,
+        "channels": true,
+        "opaque": true,
+        "nonEmpty": true,
+        "hasTitle": true,
+        "hasSourceMaterialLabel": true,
+        "hasQuickReview": true,
+        "calloutSourcesExist": true
+      },
+      "passed": true
+    }
+  ],
+  "note": "This validates Bookmoth's source-grounded collage renderer and PNG export path. It does not prove the truth of source content or the quality of an external AI image model."
+}

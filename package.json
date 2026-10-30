@@ -10,6 +10,7 @@
     "lint": "eslint",
     "test": "node --test",
     "validate:subjects": "node scripts/validate-subject-matrix.mjs",
+    "validate:visuals": "node scripts/validate-visual-output.mjs",
     "check": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

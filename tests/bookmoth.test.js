@@ -501,6 +501,7 @@ test("science quality gate keeps multiple verified calculations in one study pac
 
   const base = buildEvidenceLockedPack(sources, "Study density and molarity.");
   const gated = normalizeLearningPack(applySubjectQualityGate(base, sources, "Chemistry", "Study density and molarity."));
+  assert.equal(gated.title, "Chemistry calculation review: evidence-locked study guide");
   assert.equal(gated.deepLessons.length, 2);
   assert.deepEqual(gated.deepLessons.map((lesson) => lesson.sourceIds[0]), ["S1", "S2"]);
   assert.equal(gated.evidenceReview.acceptedLessons, 2);

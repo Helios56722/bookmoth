@@ -634,6 +634,7 @@ function applyVerifiedLessonToOutputs(result, verified, depthSummary, evidenceNo
 function applyVerifiedLessonsToOutputs(result, verifiedLessons, depthSummary, evidenceNote) {
   const lessons = verifiedLessons.map((verified) => verified.lesson);
   const single = lessons.length === 1;
+  if (!single) result.title = "Chemistry calculation review: evidence-locked study guide";
   result.deepLessons = lessons;
   result.depthSummary = depthSummary;
   result.concepts = lessons.map((lesson) => ({ term: lesson.term, explanation: lesson.explanation, sourceIds: lesson.sourceIds }));

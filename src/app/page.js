@@ -565,7 +565,7 @@ export default function Home() {
                 <input type="checkbox" checked={researchMode && providerStatus?.researchAvailable === true} disabled={!providerStatus?.researchAvailable} onChange={(event) => setResearchMode(event.target.checked)} />
                 <span><b>Cross-check with global sources</b><small>{providerStatus?.researchAvailable ? "Searches primary and original-language sources across relevant regions." : providerStatus?.provider === "openrouter" ? "The free OpenRouter route stays grounded in your uploads; it does not include live web research." : "Available with a research-enabled cloud provider; local Ollama stays upload-only."}</small></span>
               </label>
-              <p>Bookmoth ranks sources by authority and proximity to the claim. Chinese-language sources are prioritized for Chinese-origin material; every subject receives the same original-language treatment.</p>
+              <p>{providerStatus?.researchAvailable ? "When live research is available, Bookmoth ranks sources by authority and proximity to the claim." : "This connection is upload-only, so Bookmoth will not fetch outside sources."} Chinese-origin material keeps its original-language context, and every subject receives the same source-language treatment.</p>
             </fieldset>
 
             <label className="integrity-check">

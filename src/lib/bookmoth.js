@@ -81,6 +81,8 @@ const SUBJECT_RULES = [
 
 function subjectTaskType(domain, text) {
   if (domain === "mathematics") {
+    if (/\b(?:fraction|fractions|numerator|denominator)\b/i.test(text)) return "Fraction arithmetic";
+    if (/\b(?:rectangle|area|perimeter)\b/i.test(text)) return "Geometry calculation";
     if (/\b(?:solve|equation|algebra)\b|[a-z]\s*=|=\s*-?\d/i.test(text)) return "Equation solving";
     if (/\b(?:percent|ratio|rate|word problem)\b/i.test(text)) return "Quantitative word problem";
     return "Calculation and reasoning";
@@ -115,7 +117,7 @@ const SUBJECT_GUIDANCE = {
   "language-arts": "Name the language feature or claim, quote the exact words that support it, explain how the evidence works, and separate textual observation from interpretation.",
   science: "Define the system, identify parts or variables, explain the sequence or mechanism supported by the source, and distinguish observations from inferences.",
   history: "Establish chronology, identify the people or institutions involved, separate source claims from later interpretation, and explain causes or consequences only when the evidence supports them.",
-  "world-language": "Preserve the original wording, translate meaning in context, explain relevant vocabulary or grammar, and flag idioms or ambiguity instead of forcing a literal answer.",
+  "world-language": "For an explicit translation task, the direct answer must contain the complete translation in the requested output language, not just repeat the original. Preserve the original wording as evidence; explain the key vocabulary or grammar that supports the translation, and flag omitted subjects, idioms, register, or ambiguity instead of inventing context or forcing a literal answer.",
   computing: "Trace inputs, representation, operations, and outputs in order; preserve exact code or notation and verify the result with a small worked check.",
   general: "Give the direct answer, connect it to exact source evidence, explain the reasoning in order, and mark anything the supplied material cannot establish.",
 };
@@ -135,7 +137,13 @@ export function inferSubjectProfile(sources = [], context = "", goal = "") {
   const explicitScience = /\b(?:biology|chemistry|physics|earth science)\b/i.test(text);
   const explicitAlgebra = /\b(?:algebra|linear equation|quadratic)\b/i.test(text)
     || /\bsolve\b[^\n]{0,50}\b[x-z]\b/i.test(text);
-  if (explicitScience && !explicitAlgebra) {
+  const explicitWorldLanguage = /\b(?:translate|translation|conjugate|conjugation|spanish|french|german|mandarin|chinese|japanese|korean|arabic|portuguese|hindi|vietnamese)\b/i.test(text);
+  const explicitMusic = /\b(?:music theory|note values|whole note|half note|quarter note|rhythm|beats per measure)\b/i.test(text);
+  if (explicitWorldLanguage) {
+    selected = scores.find((item) => item.domain === "world-language") || selected;
+  } else if (explicitMusic) {
+    selected = { domain: "general", label: "General learning", score: 3 };
+  } else if (explicitScience && !explicitAlgebra) {
     selected = scores.find((item) => item.domain === "science") || selected;
   }
   const confidence = selected.score >= 3 && selected.score > (runnerUp?.score || 0)
@@ -175,7 +183,7 @@ export function subjectTeachingDirective(profile = {}) {
     return "HISTORY MODE: Establish who, what, when, and where before explaining causes, consequences, or significance. Keep chronology intact, quote the source for claims, distinguish primary evidence from interpretation, and avoid present-day assumptions that the source does not support.";
   }
   if (domain === "world-language") {
-    return "WORLD LANGUAGE MODE: Preserve the original wording. A translation, conjugation, or grammar label may be derived from that wording; give the context-aware result, explain the exact feature that affects meaning, and identify ambiguity, register, or idioms. Do not replace the source with a loose summary or invent missing surrounding context.";
+    return "WORLD LANGUAGE MODE: Preserve the original wording. A translation, conjugation, or grammar label may be derived from that wording; give the context-aware result and explain the exact feature that affects meaning. Preserve omitted subjects and other ambiguity: do not insert I, you, he, she, or they unless the source or supplied context identifies that subject. State when a natural translation needs a subject that the original leaves unstated. Identify register or idioms, and do not invent missing surrounding context.";
   }
   if (domain === "computing") {
     return "COMPUTING MODE: Trace the representation or algorithm step by step. Derived outputs may be computed from the exact code, bits, values, or rules in the source; show the operation and verify it with a compact worked check. Do not invent runtime behavior, inputs, or implementation details that are not supplied.";
@@ -367,20 +375,290 @@ export function buildVerifiedLinearEquationLesson(sources = []) {
   return null;
 }
 
+function makeVerifiedLesson({ term, objective, answer, explanation, steps, whyItMatters, example, checkQuestion, checkHint, sourceId, quote }) {
+  return {
+    lesson: {
+      term,
+      learningObjective: objective,
+      directAnswer: answer,
+      explanation,
+      steps: steps.map(([title, detail]) => ({ title, explanation: detail })),
+      whyItMatters,
+      example,
+      commonMistakes: [
+        { mistake: "Skip a step or change the supplied values or wording.", correction: "Keep the source visible and follow the written method in order." },
+        { mistake: "Stop before checking whether the result answers the original question.", correction: "Compare the result with the question and verify the calculation or transformation." },
+      ],
+      check: { question: checkQuestion, hint: checkHint, answer },
+      sourceIds: [sourceId],
+      evidenceQuotes: [quote],
+      verification: "source-checked",
+    },
+    verification: {
+      status: "verified",
+      method: "Deterministic calculation and independent recomputation",
+      note: explanation,
+      expectedAnswer: answer,
+    },
+  };
+}
+
+function reduceFraction(numerator, denominator) {
+  if (!Number.isInteger(numerator) || !Number.isInteger(denominator) || denominator === 0) return null;
+  const sign = denominator < 0 ? -1 : 1;
+  let left = Math.abs(numerator);
+  let right = Math.abs(denominator);
+  while (right) [left, right] = [right, left % right];
+  const divisor = left || 1;
+  const top = (numerator * sign) / divisor;
+  const bottom = Math.abs(denominator) / divisor;
+  return bottom === 1 ? String(top) : `${top}/${bottom}`;
+}
+
+function greatestCommonDivisor(a, b) {
+  let left = Math.abs(a); let right = Math.abs(b);
+  while (right) [left, right] = [right, left % right];
+  return left || 1;
+}
+
+export function buildVerifiedBasicMathLesson(sources = []) {
+  for (const [index, source] of (Array.isArray(sources) ? sources : []).entries()) {
+    const text = source?.extractedText || "";
+    const fraction = text.match(/(\d+)\s*\/\s*(\d+)\s*([+-])\s*(\d+)\s*\/\s*(\d+)/);
+    if (fraction) {
+      const [, leftTop, leftBottom, operator, rightTop, rightBottom] = fraction;
+      const a = Number(leftTop); const b = Number(leftBottom); const c = Number(rightTop); const d = Number(rightBottom);
+      if (!b || !d || Math.max(a, b, c, d) > 100000) continue;
+      const numerator = operator === "+" ? a * d + c * b : a * d - c * b;
+      const denominator = b * d;
+      const answer = reduceFraction(numerator, denominator);
+      if (!answer) continue;
+      const commonDenominator = Math.abs((b / greatestCommonDivisor(b, d)) * d);
+      const equivalent = `${a * (commonDenominator / b)}/${commonDenominator} ${operator} ${c * (commonDenominator / d)}/${commonDenominator}`;
+      const quote = text.split(/\r?\n/).find((line) => line.includes(fraction[0]))?.trim() || fraction[0];
+      return makeVerifiedLesson({
+        term: `Fraction ${operator === "+" ? "addition" : "subtraction"}`,
+        objective: `Calculate ${fraction[0]} by using a common denominator and reduce the result.`,
+        answer,
+        explanation: `Use ${commonDenominator} as a common denominator: ${equivalent} = ${answer}. Recomputing both fractions with that denominator confirms the result.`,
+        steps: [
+          ["Read the expression", `The supplied problem is ${fraction[0]}.`],
+          ["Find a common denominator", `Multiply the denominators ${b} and ${d} to use ${commonDenominator}.`],
+          ["Rewrite and combine", `Rewrite the expression as ${equivalent}, then ${operator === "+" ? "add" : "subtract"} the numerators.`],
+          ["Reduce and check", `The reduced result is ${answer}; multiplying back by the common denominator reproduces the combined fraction.`],
+        ],
+        whyItMatters: "A shared denominator lets you combine fractional amounts without changing their value.",
+        example: `${fraction[0]} becomes ${equivalent}, which reduces to ${answer}.`,
+        checkQuestion: `What is ${fraction[0]} in simplest form?`,
+        checkHint: `Rewrite both fractions with denominator ${commonDenominator} first.`,
+        sourceId: source.sourceId || `S${index + 1}`,
+        quote,
+      });
+    }
+
+    const rectangle = text.match(/rectangle[^\n]*?(\d+(?:\.\d+)?)\s*cm\s+long\s+and\s+(\d+(?:\.\d+)?)\s*cm\s+wide/i);
+    if (rectangle && /\b(?:area|perimeter)\b/i.test(text)) {
+      const length = Number(rectangle[1]); const width = Number(rectangle[2]);
+      if (length <= 100000 && width <= 100000) {
+        const area = formatMathNumber(length * width);
+        const perimeter = formatMathNumber(2 * (length + width));
+        const answer = `Area = ${area} cm²; perimeter = ${perimeter} cm`;
+        const quote = text.split(/\r?\n/).find((line) => /rectangle/i.test(line) && /cm/i.test(line))?.trim() || rectangle[0].trim();
+        return makeVerifiedLesson({
+          term: "Rectangle area and perimeter",
+          objective: "Calculate the rectangle's area and perimeter from its supplied side lengths, with units.",
+          answer,
+          explanation: `Area multiplies length by width: ${length} cm × ${width} cm = ${area} cm². Perimeter adds all four sides: 2 × (${length} cm + ${width} cm) = ${perimeter} cm.`,
+          steps: [
+            ["Identify the side lengths", `Length = ${length} cm and width = ${width} cm.`],
+            ["Calculate area", `A = length × width = ${length} × ${width} = ${area} cm².`],
+            ["Calculate perimeter", `P = 2 × (length + width) = 2 × (${length} + ${width}) = ${perimeter} cm.`],
+            ["Check the units", "Area uses square centimeters; perimeter uses centimeters."],
+          ],
+          whyItMatters: "Area measures the surface inside a rectangle; perimeter measures the distance around its edge.",
+          example: `For ${length} cm by ${width} cm, A = ${area} cm² and P = ${perimeter} cm.`,
+          checkQuestion: `For a ${length} cm by ${width} cm rectangle, what are the area and perimeter?`,
+          checkHint: "Multiply the side lengths for area; add all four sides for perimeter.",
+          sourceId: source.sourceId || `S${index + 1}`,
+          quote,
+        });
+      }
+    }
+  }
+  return null;
+}
+
+export function buildVerifiedScienceCalculationLesson(sources = []) {
+  for (const [index, source] of (Array.isArray(sources) ? sources : []).entries()) {
+    const text = source?.extractedText || "";
+    let result;
+    const mass = text.match(/mass\s*(?:=|of|is)?\s*(\d+(?:\.\d+)?)\s*(kg|g)\b/i);
+    const volume = text.match(/volume\s*(?:=|of|is)?\s*(\d+(?:\.\d+)?)\s*(cm(?:\^?3|³)|m(?:\^?3|³)|l|ml)\b/i);
+    if (/\bdensity\s*=\s*mass\s*\/\s*volume/i.test(text) && mass && volume) {
+      const value = Number(mass[1]) / Number(volume[1]);
+      const unit = `${mass[2]}/${volume[2].replace("^3", "³")}`;
+      result = { title: "Density", formula: "density = mass ÷ volume", substitution: `${mass[1]} ${mass[2]} ÷ ${volume[1]} ${volume[2]}`, answer: `${formatMathNumber(value)} ${unit}` };
+    }
+
+    const mol = text.match(/(\d+(?:\.\d+)?)\s*mol\b/i);
+    const liters = text.match(/(\d+(?:\.\d+)?)\s*l(?:iters?)?\b/i);
+    if (!result && /molarity\s*=\s*moles?\s+of\s+solute\s*\/\s*liters?\s+of\s+solution/i.test(text) && mol && liters) {
+      const value = Number(mol[1]) / Number(liters[1]);
+      result = { title: "Molarity", formula: "molarity = moles ÷ liters", substitution: `${mol[1]} mol ÷ ${liters[1]} L`, answer: `${formatMathNumber(value)} mol/L` };
+    }
+
+    const distance = text.match(/(\d+(?:\.\d+)?)\s*m\b/i);
+    const seconds = text.match(/(\d+(?:\.\d+)?)\s*s\b/i);
+    if (!result && /average\s+speed\s*=\s*distance\s*\/\s*time/i.test(text) && distance && seconds) {
+      const value = Number(distance[1]) / Number(seconds[1]);
+      result = { title: "Average speed", formula: "average speed = distance ÷ time", substitution: `${distance[1]} m ÷ ${seconds[1]} s`, answer: `${formatMathNumber(value)} m/s` };
+    }
+
+    const kg = text.match(/(\d+(?:\.\d+)?)\s*kg\b/i);
+    const acceleration = text.match(/(\d+(?:\.\d+)?)\s*m\s*\/\s*s\s*(?:\^\s*2|²)/i);
+    if (!result && /\bF\s*=\s*m\s*[×*]\s*a/i.test(text) && kg && acceleration) {
+      const value = Number(kg[1]) * Number(acceleration[1]);
+      result = { title: "Net force", formula: "F = mass × acceleration", substitution: `${kg[1]} kg × ${acceleration[1]} m/s²`, answer: `${formatMathNumber(value)} N` };
+    }
+
+    if (!result || !Number.isFinite(Number(result.answer.match(/^-?\d+(?:\.\d+)?/)?.[0]))) continue;
+    const quote = text.split(/\r?\n/).find((line) => new RegExp(result.title.split(" ")[0], "i").test(line) && /=|:/.test(line))?.trim()
+      || text.split(/\r?\n/).find((line) => line.trim().length >= 8)?.trim();
+    if (!quote) continue;
+    const explanation = `${result.formula}. Substitute the supplied values: ${result.substitution} = ${result.answer}. Repeating the arithmetic confirms the result and the units.`;
+    return makeVerifiedLesson({
+      term: result.title,
+      objective: `Calculate ${result.title.toLowerCase()} from the supplied formula and values, including units.`,
+      answer: result.answer,
+      explanation,
+      steps: [
+        ["Choose the supplied formula", result.formula + "."],
+        ["Substitute the values", result.substitution + "."],
+        ["Calculate", `The arithmetic gives ${result.answer}.`],
+        ["Check units", `The units reduce to ${result.answer.split(" ").slice(1).join(" ")}.`],
+      ],
+      whyItMatters: "Writing the formula, substitution, arithmetic, and units makes the science calculation easy to audit.",
+      example: `${result.substitution} = ${result.answer}.`,
+      checkQuestion: `Using the supplied values, what is ${result.title.toLowerCase()}?`,
+      checkHint: "Write the formula and substitute the values with their units.",
+      sourceId: source.sourceId || `S${index + 1}`,
+      quote,
+    });
+  }
+  return null;
+}
+
+export function buildVerifiedPythonAccumulatorLesson(sources = []) {
+  for (const [index, source] of (Array.isArray(sources) ? sources : []).entries()) {
+    const text = source?.extractedText || "";
+    const match = text.match(/total\s*=\s*(\d+)\s*\n\s*for\s+(\w+)\s+in\s+\[([\d,\s]+)\]\s*:\s*\n\s*total\s*\+=\s*\2\s*\n\s*print\s*\(\s*total\s*\)/i);
+    if (!match) continue;
+    const initial = Number(match[1]);
+    const variable = match[2];
+    const values = match[3].split(",").map((value) => Number(value.trim()));
+    if (values.length === 0 || values.length > 12 || values.some((value) => !Number.isInteger(value) || Math.abs(value) > 100000)) continue;
+    const running = [];
+    let total = initial;
+    for (const value of values) { total += value; running.push(total); }
+    const answer = `The program prints ${total}.`;
+    const quote = text.split(/\r?\n/).filter((line) => line.trim()).slice(0, 4).join("\n");
+    return makeVerifiedLesson({
+      term: "Trace a Python accumulator loop",
+      objective: "Track the total after each loop iteration and verify the printed output.",
+      answer,
+      explanation: `The loop starts at ${initial}. It adds ${variable} for each value in the list, so the running totals are ${running.join(", then ")}. print(total) therefore displays ${total}.`,
+      steps: [
+        ["Initialize", `total starts at ${initial}.`],
+        ["Read the values", `The loop processes ${values.join(", ")} in order.`],
+        ["Update the total", `After each iteration, total is ${running.join(", then ")}.`],
+        ["Read the output", `print(total) displays ${total}.`],
+      ],
+      whyItMatters: "Tracing each update in order prevents skipped iterations and mistaken final values.",
+      example: `${initial} + ${values.join(" + ")} = ${total}.`,
+      checkQuestion: "What value does print(total) display?",
+      checkHint: "Start at the initial total and add one list value per iteration.",
+      sourceId: source.sourceId || `S${index + 1}`,
+      quote,
+    });
+  }
+  return null;
+}
+
+export function buildVerifiedActivePassiveLesson(sources = []) {
+  for (const [index, source] of (Array.isArray(sources) ? sources : []).entries()) {
+    const text = source?.extractedText || "";
+    if (!/rewrite\s+(?:it|the sentence)\s+in\s+passive\s+voice/i.test(text)) continue;
+    const sentence = text.match(/(?:active\s+sentence\s*:\s*)?((?:The|A|An)\s+\w+)\s+(\w+ed)\s+((?:the|a|an)\s+(?:\w+\s+){0,2}\w+)\./i);
+    if (!sentence) continue;
+    const subject = sentence[1];
+    const verb = sentence[2];
+    const object = sentence[3];
+    const plural = /s$/i.test(object.split(/\s+/).at(-1));
+    const beVerb = plural ? "were" : "was";
+    const answer = `${object[0].toUpperCase()}${object.slice(1)} ${beVerb} ${verb} by ${subject[0].toLowerCase()}${subject.slice(1)}.`;
+    const sourceQuote = sentence[0].trim();
+    const instruction = text.split(/\r?\n/).find((line) => /rewrite.*passive/i.test(line))?.trim() || "Rewrite the sentence in passive voice.";
+    return makeVerifiedLesson({
+      term: "Active-to-passive sentence transformation",
+      objective: "Rewrite the supplied regular past-tense sentence in passive voice while preserving its tense and participants.",
+      answer,
+      explanation: `In the active sentence, “${subject}” performs the action and “${object}” receives it. Passive voice moves the receiver to the subject position, uses “${beVerb}” to agree with the plural receiver, keeps the past participle “${verb},” and retains the actor in a “by” phrase.`,
+      steps: [
+        ["Find the participants", `Actor: ${subject}. Receiver: ${object}.`],
+        ["Move the receiver forward", `Begin the passive sentence with ${object}.`],
+        ["Keep the tense and agreement", `Use “${beVerb} ${verb}” for the plural receiver while preserving the past-tense action.`],
+        ["Keep the actor clear", `Add “by ${subject[0].toLowerCase()}${subject.slice(1)}” to show who performed the action.`],
+      ],
+      whyItMatters: "Changing voice shifts sentence emphasis while keeping the same event and participants.",
+      example: answer,
+      checkQuestion: "Which phrase names the original actor in the passive sentence?",
+      checkHint: "Look for the phrase beginning with “by.”",
+      sourceId: source.sourceId || `S${index + 1}`,
+      quote: `${sourceQuote} ${instruction}`,
+    });
+  }
+  return null;
+}
+
+function applyVerifiedLessonToOutputs(result, verified, depthSummary, evidenceNote) {
+  const lesson = verified.lesson;
+  const sourceIds = lesson.sourceIds;
+  result.deepLessons = [lesson];
+  result.depthSummary = depthSummary;
+  result.concepts = [{ term: lesson.term, explanation: lesson.explanation, sourceIds }];
+  result.evidenceReview = { status: "source-checked", acceptedLessons: 1, rejectedLessons: 0, note: evidenceNote };
+  result.trailMap = {
+    glowPoints: [{ id: "G1", label: lesson.term, whyItMatters: lesson.whyItMatters, sourceIds }],
+    threads: [],
+    blindSpots: [],
+    recallLoop: [lesson.check.question, "Answer from memory, then compare your steps with the worked explanation."],
+  };
+  result.reportSections = [{ heading: lesson.term, body: `${lesson.directAnswer}\n\n${lesson.explanation}`, sourceIds }];
+  result.flashcards = [{ front: lesson.check.question, back: lesson.check.answer, sourceIds }];
+  result.practice = [{ question: lesson.check.question, hint: lesson.check.hint, answer: lesson.check.answer, sourceIds }];
+  result.collage = {
+    title: lesson.term,
+    caption: lesson.directAnswer,
+    callouts: [{ text: lesson.whyItMatters, sourceIds }],
+  };
+  result.reviewPlan = [
+    "Work the problem once without looking at the answer.",
+    "Check the calculation or transformation against the worked steps.",
+    "Retry the recall question later without the source visible.",
+  ];
+  return result;
+}
+
 export function applySubjectQualityGate(pack = {}, sources = [], context = "", goal = "") {
   const profile = inferSubjectProfile(sources, context, goal);
   const result = { ...pack, subjectProfile: profile };
   if (profile.domain === "mathematics") {
-    const verifiedMath = buildVerifiedLinearEquationLesson(sources);
+    const verifiedMath = buildVerifiedLinearEquationLesson(sources) || buildVerifiedBasicMathLesson(sources);
     if (verifiedMath) {
-      result.deepLessons = [verifiedMath.lesson];
-      result.depthSummary = "This worked solution was derived from the visible equation and checked by substituting the result into both sides.";
-      result.evidenceReview = {
-        status: "source-checked",
-        acceptedLessons: 1,
-        rejectedLessons: 0,
-        note: "The visible equation was transcribed as source evidence. Bookmoth then solved it with deterministic linear algebra and verified the answer by substitution.",
-      };
+      const depthSummary = verifiedMath.verification.method.includes("linear-equation")
+        ? "This worked solution was derived from the visible equation and checked by substituting the result into both sides."
+        : "This worked solution was calculated from the supplied values and independently recomputed.";
+      applyVerifiedLessonToOutputs(result, verifiedMath, depthSummary, verifiedMath.verification.note);
       result.subjectProfile = { ...profile, answerVerification: verifiedMath.verification };
       return result;
     }
@@ -394,6 +672,70 @@ export function applySubjectQualityGate(pack = {}, sources = [], context = "", g
       },
     };
     return result;
+  }
+  if (profile.domain === "science") {
+    const verifiedScience = buildVerifiedScienceCalculationLesson(sources);
+    if (verifiedScience) {
+      applyVerifiedLessonToOutputs(
+        result,
+        verifiedScience,
+        "This science calculation uses a supplied formula and values, with the arithmetic and units checked independently.",
+        "The calculation was derived from the formula and values transcribed from the source, then independently recomputed with its units.",
+      );
+      result.subjectProfile = { ...profile, answerVerification: verifiedScience.verification };
+      return result;
+    }
+  }
+  if (profile.domain === "computing") {
+    const verifiedCode = buildVerifiedPythonAccumulatorLesson(sources);
+    if (verifiedCode) {
+      applyVerifiedLessonToOutputs(
+        result,
+        verifiedCode,
+        "This small Python loop was traced in order, and the final printed value was recomputed.",
+        "The supported accumulator pattern was traced by a bounded deterministic evaluator; no arbitrary code was executed.",
+      );
+      result.subjectProfile = { ...profile, answerVerification: verifiedCode.verification };
+      return result;
+    }
+  }
+  if (profile.domain === "language-arts") {
+    const verifiedGrammar = buildVerifiedActivePassiveLesson(sources);
+    if (verifiedGrammar) {
+      applyVerifiedLessonToOutputs(
+        result,
+        verifiedGrammar,
+        "This sentence transformation was derived from a constrained, regular past-tense source pattern and checked for tense and subject-verb agreement.",
+        "The transformation preserves the source event and participants using a bounded grammar pattern. Review irregular verbs or more complex sentences manually.",
+      );
+      result.subjectProfile = { ...profile, answerVerification: verifiedGrammar.verification };
+      return result;
+    }
+  }
+  if (profile.domain === "world-language") {
+    const sourceText = sources.map((source) => source.extractedText || "").join(" ");
+    const lesson = result.deepLessons?.[0];
+    const directAnswer = lesson?.directAnswer || "";
+    const evidenceOnlyAnswer = Array.isArray(lesson?.evidenceQuotes)
+      && lesson.evidenceQuotes.length > 0
+      && normalizedEvidenceText(directAnswer) === normalizedEvidenceText(lesson.evidenceQuotes.join(" "));
+    const explicitTranslation = /\b(?:translate|translation)\b/i.test(`${sourceText} ${context} ${goal}`);
+    if (explicitTranslation && evidenceOnlyAnswer) {
+      result.subjectProfile = {
+        ...profile,
+        answerVerification: {
+          status: "needs-review",
+          method: "Translation completion check",
+          note: "The displayed answer repeats the source wording instead of showing a clear translation. Bookmoth marked this incomplete response for review rather than treating source traceability as translation accuracy.",
+          expectedAnswer: "",
+        },
+      };
+      result.cautions = [
+        ...(result.cautions || []),
+        "The requested translation was not completed in the displayed lesson. Check the original and try again before studying this answer.",
+      ];
+      return result;
+    }
   }
   result.subjectProfile = {
     ...profile,

@@ -4,8 +4,12 @@ import {
   applySubjectQualityGate,
   auditLearningPackConsistency,
   buildEvidenceLockedPack,
+  buildVerifiedActivePassiveLesson,
+  buildVerifiedBasicMathLesson,
   buildSourceLockedDeepLesson,
   buildVerifiedLinearEquationLesson,
+  buildVerifiedPythonAccumulatorLesson,
+  buildVerifiedScienceCalculationLesson,
   findUnsupportedLessonVocabulary,
   inferSubjectProfile,
   learningPackToMarkdown,
@@ -435,6 +439,63 @@ test("subject routing selects discipline-specific teaching methods", () => {
     assert.equal(profile.taskType, taskType, text);
     assert.ok(profile.guidance.length > 40);
   }
+});
+
+test("subject routing prioritizes translation and avoids treating musical time signatures as arithmetic", () => {
+  assert.equal(inferSubjectProfile([], "Beginner Japanese reading practice", "Translate this sentence into English.").domain, "world-language");
+  assert.equal(inferSubjectProfile([], "Music theory: note values", "Compare whole, half, and quarter notes in 4/4 time.").domain, "general");
+});
+
+test("world-language quality gate flags an explicit translation request that only repeats its source", () => {
+  const source = {
+    sourceId: "S1",
+    extractedText: "Sentence: 毎朝、水を飲みます。 Translate the sentence into English.",
+    confidence: "high",
+  };
+  const base = buildEvidenceLockedPack([source], "Translate the sentence into English.");
+  const gated = normalizeLearningPack(applySubjectQualityGate(base, [source], "Japanese", "Translate the sentence into English."));
+  assert.equal(gated.subjectProfile.domain, "world-language");
+  assert.equal(gated.subjectProfile.answerVerification.status, "needs-review");
+  assert.match(gated.subjectProfile.answerVerification.note, /instead of showing a clear translation/);
+  assert.ok(gated.cautions.some((item) => /translation was not completed/i.test(item)));
+});
+
+test("bounded deterministic math solvers explain and verify fractions and rectangle measures", () => {
+  const fraction = buildVerifiedBasicMathLesson([{ sourceId: "S1", extractedText: "Solve 2/3 + 1/6. Rewrite the fractions with a common denominator." }]);
+  assert.equal(fraction.verification.status, "verified");
+  assert.match(fraction.lesson.explanation, /4\/6 \+ 1\/6 = 5\/6/);
+
+  const rectangle = buildVerifiedBasicMathLesson([{ sourceId: "S1", extractedText: "A rectangle is 8 cm long and 5 cm wide. Find its area and perimeter." }]);
+  assert.equal(rectangle.verification.expectedAnswer, "Area = 40 cm²; perimeter = 26 cm");
+});
+
+test("bounded science solvers independently check common formula calculations and units", () => {
+  const cases = [
+    ["Density = mass / volume\nA sample has a mass of 24 g and a volume of 8 cm^3.", "3 g/cm³"],
+    ["Molarity = moles of solute / liters of solution.\nA solution contains 0.5 mol of solute in 2 L of solution.", "0.25 mol/L"],
+    ["Average speed = distance / time.\nA cyclist travels 150 m in 30 s.", "5 m/s"],
+    ["Newton's second law: F = m × a\nMass = 6 kg\nAcceleration = 2 m/s^2", "12 N"],
+  ];
+  for (const [extractedText, expectedAnswer] of cases) {
+    const result = buildVerifiedScienceCalculationLesson([{ sourceId: "S1", extractedText }]);
+    assert.equal(result.verification.status, "verified", extractedText);
+    assert.equal(result.verification.expectedAnswer, expectedAnswer, extractedText);
+  }
+});
+
+test("bounded Python loop tracer and regular past-tense passive transform verify supported patterns", () => {
+  const code = buildVerifiedPythonAccumulatorLesson([{
+    sourceId: "S1",
+    extractedText: "total = 0\nfor value in [2, 3, 4]:\n    total += value\nprint(total)",
+  }]);
+  assert.equal(code.verification.expectedAnswer, "The program prints 9.");
+  assert.match(code.lesson.explanation, /2, then 5, then 9/);
+
+  const grammar = buildVerifiedActivePassiveLesson([{
+    sourceId: "S1",
+    extractedText: "Active sentence: The librarian cataloged the new books.\nRewrite it in passive voice.",
+  }]);
+  assert.equal(grammar.verification.expectedAnswer, "The new books were cataloged by the librarian.");
 });
 
 test("deterministic linear solver handles equivalent common equation forms", () => {

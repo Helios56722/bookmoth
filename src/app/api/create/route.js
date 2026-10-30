@@ -967,7 +967,7 @@ async function reviewDeepLessonsWithOllama(teachingConfig, evidence, lessons, su
     mathematics: "MATHEMATICS REVIEW: Re-solve the visible problem. Allow algebraic transformations, computed values, standard notation, and a checked final answer even when the result is not printed in the prompt. Reject a mathematically incorrect or unexplained result.",
     "language-arts": "LANGUAGE ARTS REVIEW: Independently analyze the exact cited wording. Grammar labels, literary-device names, interpretations, and the brief language rule or definition needed to justify the answer are allowed derived analysis. When the visible task asks what wording suggests or implies, allow a reasonable interpretation framed as suggests, implies, or may mean when it follows from the ordinary meaning of the quote. Check the label, quoted support, function, and explanation. Do not reject a correct answer merely because words such as metaphor, predicate, adjective, comparison, connotation, or implication were not printed in the prompt.",
     science: "SCIENCE REVIEW: Allow calculations and conclusions derived from values, units, relationships, or formulas explicitly visible in the source. Independently recompute numerical answers. Standard arithmetic, derived units, and standard unit equivalences needed to express the result are allowed even when the numerical result is not printed in the prompt. Reject an incorrect result or an added mechanism that the source does not establish.",
-    "world-language": "WORLD LANGUAGE REVIEW: Independently check translations, tense labels, conjugation labels, and grammar explanations against the exact cited text. A correct context-aware translation and the brief vocabulary or grammar rule needed to explain it are allowed derived answers even when those English words or labels are not printed in the source. Do not reject them solely for being derived.",
+    "world-language": "WORLD LANGUAGE REVIEW: Independently check translations, tense labels, conjugation labels, and grammar explanations against the exact cited text. A correct context-aware translation and the brief vocabulary or grammar rule needed to explain it are allowed derived answers even when those English words or labels are not printed in the source. Preserve omitted subjects: reject any invented I/you/he/she/they unless the source or supplied context identifies that person, and require the lesson to identify unresolved subject ambiguity. Do not reject supported translation just because it is derived.",
     computing: "COMPUTING REVIEW: Allow outputs derived from exact bits, code, algorithms, or stated rules. Trace the operation independently and reject an incorrect output or an unstated implementation assumption.",
   }[subjectProfile.domain];
   const results = [];
@@ -1307,6 +1307,23 @@ async function createWithOllama(config, body) {
       ? "Local Ollama mode cannot search the live web. This pack is grounded in the uploaded material only."
       : "No live global research was requested.",
   };
+  // These narrow deterministic solvers replace the model's lesson later in
+  // the request. Run them before the teaching draft so verified arithmetic,
+  // bounded code tracing, and constrained grammar do not incur a long model
+  // generation/review cycle whose result will be discarded anyway.
+  const deterministicPack = applySubjectQualityGate(
+    pack,
+    extractedSources,
+    body.context,
+    body.goal,
+  );
+  if (deterministicPack.subjectProfile?.answerVerification?.status === "verified") {
+    deterministicPack.cautions = [
+      ...deterministicPack.cautions,
+      "This answer was checked by a bounded deterministic rule for the detected task pattern. Confirm that OCR copied the source values and wording correctly.",
+    ];
+    return deterministicPack;
+  }
   try {
     const teaching = await createDeepLessonsWithOllama(config, body, extractedSources, pack);
     pack.deepLessons = teaching.lessons;
